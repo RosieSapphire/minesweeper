@@ -11,17 +11,26 @@ struct minefield {
             flagged
         };
 
-        explicit tile(const vec2<unsigned int> &pos, const sf::Color &color, const state &st): pos(pos), color(color), st(st) {}
+        tile() = default;
 
         static constexpr int size = 16;
+        const sf::Color dark =  { 60,  60,  60};
+        const sf::Color mid =   {140, 140, 140};
+        const sf::Color light = {210, 210, 210};
         vec2<unsigned int> pos;
-        sf::Color color;
+        
         state st;
+        bool has_mine = false;
 
         void draw(buffer& buff);
     };
 
-    minefield field_();
+    minefield(const vec2<unsigned int> &pos, const unsigned int &mines);
+
+    static constexpr vec2<unsigned int> dimensions{20, 16};
+    tile tiles[dimensions.x * dimensions.y];
+
+    void draw(buffer &buff);
 };
 
 #endif
