@@ -34,7 +34,10 @@ void game::update() {
 
 void game::draw() {
     buffer_.clear();
-    field_.single_tile.draw(buffer_);
+    buffer_.draw_tri_tl({24, 24}, 16, sf::Color::Green);
+    buffer_.draw_tri_tr({48, 24}, 16, sf::Color::Green);
+    buffer_.draw_tri_bl({24, 48}, 16, sf::Color::Green);
+    buffer_.draw_tri_br({48, 48}, 16, sf::Color::Green);
 
     window_.clear();
     window_.draw(buffer_.get_array());

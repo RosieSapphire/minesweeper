@@ -35,3 +35,47 @@ void buffer::draw_rect(const vec2<unsigned int> &pos, const vec2<unsigned int> &
 void buffer::draw_rect(const rect<unsigned int> &r) {
     draw_rect(r.pos, r.size, r.color);
 }
+
+void buffer::draw_tri_tl(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color) {
+    unsigned int current_length = size;
+    for (unsigned int y = 0; y < size; y++) {
+        for (unsigned int x = 0; x < current_length; x++) {
+            put_pixel({pos.x + x, pos.y + y}, color);
+        }
+
+        current_length--;
+    }
+}
+
+void buffer::draw_tri_tr(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color) {
+    unsigned int current_length = size;
+    for (unsigned int y = 0; y < size; y++) {
+        for (unsigned int x = 0; x < current_length; x++) {
+            put_pixel({pos.x + (size - x), pos.y + y}, color);
+        }
+
+        current_length--;
+    }
+}
+
+void buffer::draw_tri_bl(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color) {
+    unsigned int current_length = 1;
+    for (unsigned int y = 0; y < size; y++) {
+        for (unsigned int x = 0; x < current_length; x++) {
+            put_pixel({pos.x + x, pos.y + y}, color);
+        }
+
+        current_length++;
+    }
+}
+
+void buffer::draw_tri_br(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color) {
+    unsigned int current_length = 1;
+    for (unsigned int y = 0; y < size; y++) {
+        for (unsigned int x = 0; x < current_length; x++) {
+            put_pixel({pos.x + (size - x), pos.y + y}, color);
+        }
+
+        current_length++;
+    }
+}
