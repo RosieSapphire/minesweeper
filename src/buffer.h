@@ -10,7 +10,6 @@ struct buffer {
     void draw_pixel(const vec2<unsigned int> &pos, const sf::Color &color);
     void draw_rect(const vec2<unsigned int> &pos, const vec2<unsigned int> &size, const sf::Color &color = sf::Color::White);
     void draw_rect(const rect<unsigned int> &r);
-    void draw_circle(const vec2<unsigned int> &pos, const float &radius, const sf::Color &color);
 
     sf::VertexArray get_array() const {return array_;}
     static constexpr vec2<unsigned int> get_size() {return buffer_size;}
