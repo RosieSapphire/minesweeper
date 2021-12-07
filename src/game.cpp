@@ -34,10 +34,30 @@ void game::update() {
 
 void game::draw() {
     buffer_.clear();
-    buffer_.draw_tri_tl({24, 24}, 16, sf::Color::Green);
-    buffer_.draw_tri_tr({48, 24}, 16, sf::Color::Green);
-    buffer_.draw_tri_bl({24, 48}, 16, sf::Color::Green);
-    buffer_.draw_tri_br({48, 48}, 16, sf::Color::Green);
+
+    const sf::Color dark =   {60,  60,  60};
+    const sf::Color mid =    {140, 140, 140};
+    const sf::Color light = {210, 210, 210};
+    constexpr vec2<unsigned int> tile_pos(16);
+    constexpr unsigned int tile_size = 16;
+    constexpr unsigned int edge_size = tile_size / 8;
+    constexpr unsigned int all_but_edge = tile_size - edge_size;
+
+    // triangle drawing routine
+
+    // dark
+    buffer_.draw_rect(tile_pos, {edge_size, all_but_edge}, dark);
+    buffer_.draw_rect({tile_pos.x, tile_pos.y + all_but_edge}, {tile_size, edge_size}, dark);
+
+    // light
+    buffer_.draw_tri_tr(tile_pos, edge_size, light);
+    buffer_.draw_rect({tile_pos.x + edge_size, tile_pos.y}, {all_but_edge, edge_size}, light);
+    buffer_.draw_rect({tile_pos.x + all_but_edge, tile_pos.y + edge_size}, {edge_size, all_but_edge - edge_size}, light);
+    buffer_.draw_tri_tr({tile_pos.x + all_but_edge, tile_pos.y + all_but_edge}, edge_size, light);
+    
+    buffer_.draw_rect({tile_pos.x + edge_size, tile_pos.y + edge_size}, {all_but_edge - edge_size}, mid);
+
+    // middle
 
     window_.clear();
     window_.draw(buffer_.get_array());

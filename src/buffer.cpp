@@ -51,7 +51,7 @@ void buffer::draw_tri_tr(const vec2<unsigned int> &pos, const unsigned int &size
     unsigned int current_length = size;
     for (unsigned int y = 0; y < size; y++) {
         for (unsigned int x = 0; x < current_length; x++) {
-            put_pixel({pos.x + (size - x), pos.y + y}, color);
+            put_pixel({pos.x + (size - x) - 1, pos.y + y}, color);
         }
 
         current_length--;
@@ -73,7 +73,7 @@ void buffer::draw_tri_br(const vec2<unsigned int> &pos, const unsigned int &size
     unsigned int current_length = 1;
     for (unsigned int y = 0; y < size; y++) {
         for (unsigned int x = 0; x < current_length; x++) {
-            put_pixel({pos.x + (size - x), pos.y + y}, color);
+            put_pixel({pos.x + (size - x) - 1, pos.y + y}, color);
         }
 
         current_length++;

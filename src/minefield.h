@@ -5,14 +5,23 @@
 
 struct minefield {
     struct tile {
+        enum state : const unsigned char {
+            hidden,
+            revealed,
+            flagged
+        };
+
+        explicit tile(const vec2<unsigned int> &pos, const sf::Color &color, const state &st): pos(pos), color(color), st(st) {}
+
         static constexpr int size = 16;
-        const vec2<unsigned int> pos = {25, 25};
-        const sf::Color color = sf::Color::Blue;
+        vec2<unsigned int> pos;
+        sf::Color color;
+        state st;
 
         void draw(buffer& buff);
     };
 
-    tile single_tile;
+    minefield field_();
 };
 
 #endif
