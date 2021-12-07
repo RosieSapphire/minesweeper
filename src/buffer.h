@@ -7,7 +7,7 @@ struct buffer {
     explicit buffer();
 
     void clear(const sf::Color &color = sf::Color::Black);
-    void draw_pixel(const vec2<unsigned int> &pos, const sf::Color &color);
+    void put_pixel(const vec2<unsigned int> &pos, const sf::Color &color);
     void draw_rect(const vec2<unsigned int> &pos, const vec2<unsigned int> &size, const sf::Color &color = sf::Color::White);
     void draw_rect(const rect<unsigned int> &r);
 

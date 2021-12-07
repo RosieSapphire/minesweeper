@@ -8,12 +8,12 @@ buffer::buffer():
 void buffer::clear(const sf::Color &color) {
     for (int x = 0; x < buffer_size.x; x++) {
         for (int y = 0; y < buffer_size.y; y++) {
-            draw_pixel({static_cast<unsigned int>(x), static_cast<unsigned int>(y)}, color);
+            put_pixel({static_cast<unsigned int>(x), static_cast<unsigned int>(y)}, color);
         }
     }
 }
 
-void buffer::draw_pixel(const vec2<unsigned int> &pos, const sf::Color &color) {
+void buffer::put_pixel(const vec2<unsigned int> &pos, const sf::Color &color) {
     assert(pos.x >= 0);
     assert(pos.x < buffer_size.x);
     assert(pos.y >= 0);
@@ -27,7 +27,7 @@ void buffer::draw_pixel(const vec2<unsigned int> &pos, const sf::Color &color) {
 void buffer::draw_rect(const vec2<unsigned int> &pos, const vec2<unsigned int> &size, const sf::Color &color) {
     for (int x = pos.x; x < pos.x + size.x; x++) {
         for (int y = pos.y; y < pos.y + size.y; y++) {
-            draw_pixel({static_cast<unsigned int>(x), static_cast<unsigned int>(y)}, color);
+            put_pixel({static_cast<unsigned int>(x), static_cast<unsigned int>(y)}, color);
         }
     }
 }

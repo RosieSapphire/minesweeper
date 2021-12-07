@@ -1,7 +1,7 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "buffer.h"
+#include "minefield.h"
 
 struct game {
     explicit game(const char *title);
@@ -14,6 +14,8 @@ private:
 
     buffer buffer_;
     sf::RenderWindow window_;
+
+    minefield field_;
 
     void poll();
     void update();

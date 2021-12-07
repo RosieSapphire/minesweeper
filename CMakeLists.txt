@@ -6,6 +6,7 @@ add_executable(minesweeper
                    src/rect.h
                    src/game.h src/game.cpp
                    src/buffer.h src/buffer.cpp
+                   src/minefield.h src/minefield.cpp
                    src/main.cpp)
 
 target_include_directories(minesweeper PUBLIC /usr/include/SFML)

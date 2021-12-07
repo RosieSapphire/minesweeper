@@ -2,7 +2,7 @@
 
 game::game(const char *title):
     buffer_(),
-    window_(sf::VideoMode(buffer::get_size().x, buffer::get_size().y), title, sf::Style::Close) {
+    window_(sf::VideoMode(buffer::get_size().x, buffer::get_size().y), title, sf::Style::Titlebar | sf::Style::Close) {
     window_.setPosition({buffer::get_size().x, buffer::get_size().y});
     run();
 }
@@ -34,7 +34,8 @@ void game::update() {
 
 void game::draw() {
     buffer_.clear();
-    
+    field_.single_tile.draw(buffer_);
+
     window_.clear();
     window_.draw(buffer_.get_array());
     window_.display();
