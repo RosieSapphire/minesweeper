@@ -14,15 +14,7 @@ game::~game() {
 void game::run() {
     while (window_.isOpen()) {
         poll();
-
-        // This is fucking minesweeper. We don't need a super percise delta-time, that's just a goddamn waste of resources.
-        float elapsed_time = clock_.restart().asSeconds();
-        while (elapsed_time > 0.0f) {
-            const float delta_time = std::min(0.0025f, elapsed_time);
-            update(delta_time);
-            elapsed_time -= delta_time;
-        }
-        
+        update();
         draw();
     }
 }
@@ -36,7 +28,9 @@ void game::poll() {
     }
 }
 
-void game::update(const float &delta_time) {}
+void game::update() {
+    const float delta_time = clock_.restart().asSeconds();
+}
 
 void game::draw() {
     buffer_.clear();

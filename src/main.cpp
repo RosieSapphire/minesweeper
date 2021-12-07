@@ -1,7 +1,7 @@
 #include "game.h"
 
 int main() {
-    game g("Fart Annoyed");
+    game g("Minesweeper");
 
     return 0;
 }

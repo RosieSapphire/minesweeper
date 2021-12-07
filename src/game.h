@@ -16,7 +16,7 @@ private:
     sf::RenderWindow window_;
 
     void poll();
-    void update(const float &delta_time);
+    void update();
     void draw();
 };
 
