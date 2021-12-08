@@ -31,7 +31,13 @@ void game::poll() {
 }
 
 void game::update() {
-    const float delta_time = clock_.restart().asSeconds();
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+        const auto mouse_pos = vec2<unsigned int>(static_cast<unsigned int>(sf::Mouse::getPosition(window_).x), static_cast<unsigned int>(sf::Mouse::getPosition(window_).y));
+        minefield::tile &tile_at_mouse_pos = field_.tile_at(field_.screen_to_grid(mouse_pos));
+        if (tile_at_mouse_pos.st != minefield::tile::state::revealed) {
+            tile_at_mouse_pos.st = minefield::tile::state::revealed;
+        }
+    }
 }
 
 void game::draw() {

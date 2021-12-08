@@ -10,8 +10,6 @@ struct game {
     void run();
 
 private:
-    sf::Clock clock_;
-
     buffer buffer_;
     sf::RenderWindow window_;
 

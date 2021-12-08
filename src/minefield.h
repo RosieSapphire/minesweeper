@@ -22,6 +22,7 @@ struct minefield {
         state st;
         bool has_mine = false;
 
+        inline void reveal() {st = state::revealed;}
         void draw(buffer& buff);
     };
 
@@ -29,8 +30,12 @@ struct minefield {
 
     static constexpr vec2<unsigned int> dimensions{20, 16};
     tile tiles[dimensions.x * dimensions.y];
+    vec2<unsigned int> screen_pos;
 
     void draw(buffer &buff);
+
+    inline vec2<unsigned int> screen_to_grid(const vec2<unsigned int> &mouse_pos) {return (mouse_pos - screen_pos) / tile::size;}
+    inline tile &tile_at(const vec2<unsigned int> &pos) {return tiles[pos.y * dimensions.x + pos.x];}
 };
 
 #endif

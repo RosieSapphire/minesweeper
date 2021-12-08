@@ -39,6 +39,14 @@ struct vec2 {
         return *this = *this * other;
     }
 
+    constexpr vec2 operator/(const T &other) const {
+        return {x / other, y / other};
+    }
+
+    vec2& operator/=(const float &other) {
+        return *this = *this / other;
+    }
+
     constexpr float get_mag_sq() const {
         return x * x + y * y;
     }

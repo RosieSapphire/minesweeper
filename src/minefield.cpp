@@ -32,10 +32,10 @@ void minefield::tile::draw(buffer& buff) {
     }    
 }
 
-minefield::minefield(const vec2<unsigned int> &pos, const unsigned int &mines) {
+minefield::minefield(const vec2<unsigned int> &pos, const unsigned int &mines): screen_pos(pos) {
     for (unsigned int y = 0; y < dimensions.y; y++) {
         for (unsigned int x = 0; x < dimensions.x; x++) {
-            tiles[y * dimensions.x + x].pos = pos + vec2<unsigned int>{x * tile::size, y * tile::size};
+            tiles[y * dimensions.x + x].pos = screen_pos + vec2<unsigned int>{x * tile::size, y * tile::size};
             tiles[y * dimensions.x + x].st = tile::state::hidden;
         }
     }  
@@ -55,18 +55,6 @@ minefield::minefield(const vec2<unsigned int> &pos, const unsigned int &mines) {
         } while (current->has_mine);
 
         current->has_mine = true;
-    }
-
-    for (int i = 0; i < 160; i++) {
-        vec2<unsigned int> current_pos;
-        tile *current = nullptr;
-
-        do {
-            current_pos = {xrand(rng), yrand(rng)};
-            current = &tiles[current_pos.y * dimensions.x + current_pos.x];
-        } while (current->st == tile::state::revealed);
-
-        current->st = tile::state::revealed;
     }
 }
 
