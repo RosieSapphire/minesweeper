@@ -15,8 +15,6 @@ private:
 
     minefield field_;
 
-    bool clicked_ = false;
-
     void poll();
     void update();
     void draw();
