@@ -22,7 +22,7 @@ struct buffer {
 
 private:
     sf::VertexArray array_;
-    static constexpr vec2<unsigned int> buffer_size{800, 600};
+    static constexpr vec2<unsigned int> buffer_size{704, 576};
     static constexpr unsigned int buffer_dim = buffer_size.x * buffer_size.y;
 };
 
