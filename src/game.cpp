@@ -24,19 +24,27 @@ void game::run() {
 void game::poll() {
     sf::Event event;
     while (window_.pollEvent(event)) {
-        if (event.type == sf::Event::Closed) {
-            window_.close();
+        switch (event.type) {
+            case sf::Event::Closed:
+                window_.close();
+                break;
+
+            case sf::Event::MouseButtonPressed:
+                clicked_ = true;
+                break;
         }
     }
 }
 
 void game::update() {
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+    if (clicked_) {
         const auto mouse_pos = vec2<unsigned int>(static_cast<unsigned int>(sf::Mouse::getPosition(window_).x), static_cast<unsigned int>(sf::Mouse::getPosition(window_).y));
         minefield::tile &tile_at_mouse_pos = field_.tile_at(field_.screen_to_grid(mouse_pos));
         if (tile_at_mouse_pos.st != minefield::tile::state::revealed) {
             tile_at_mouse_pos.st = minefield::tile::state::revealed;
         }
+
+        clicked_ = false;
     }
 }
 
