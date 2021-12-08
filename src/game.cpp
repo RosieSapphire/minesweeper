@@ -3,7 +3,7 @@
 game::game(const char *title):
     buffer_(),
     window_(sf::VideoMode(buffer::get_size().x, buffer::get_size().y), title, sf::Style::Titlebar | sf::Style::Close),
-    field_({32}, 69) 
+    field_({32}, 32) 
     {
     window_.setPosition({buffer::get_size().x, buffer::get_size().y});
     run();

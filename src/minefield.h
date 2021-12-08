@@ -13,7 +13,7 @@ struct minefield {
 
         tile() = default;
 
-        static constexpr int size = 16;
+        static constexpr unsigned int size = 32;
         const sf::Color dark =  { 60,  60,  60};
         const sf::Color mid =   {140, 140, 140};
         const sf::Color light = {210, 210, 210};
