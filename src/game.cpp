@@ -30,10 +30,23 @@ void game::poll() {
                 break;
 
             case sf::Event::MouseButtonPressed:
-                const auto mouse_pos = vec2<unsigned int>(static_cast<unsigned int>(sf::Mouse::getPosition(window_).x), static_cast<unsigned int>(sf::Mouse::getPosition(window_).y));
-                minefield::tile &tile_at_mouse_pos = field_.tile_at(field_.screen_to_grid(mouse_pos));
-                if (tile_at_mouse_pos.st == minefield::tile::state::hidden) {
-                    tile_at_mouse_pos.st = minefield::tile::state::revealed;
+                if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+                    const auto mouse_pos = vec2<unsigned int>(static_cast<unsigned int>(sf::Mouse::getPosition(window_).x), static_cast<unsigned int>(sf::Mouse::getPosition(window_).y));
+                    minefield::tile &tile_at_mouse_pos = field_.tile_at(field_.screen_to_grid(mouse_pos));
+                    if (tile_at_mouse_pos.st == minefield::tile::state::hidden) {
+                        tile_at_mouse_pos.st = minefield::tile::state::revealed;
+                    }
+                } else if (sf::Mouse::isButtonPressed(sf::Mouse::Right)) {
+                    const auto mouse_pos = vec2<uint32_t>(static_cast<unsigned int>(sf::Mouse::getPosition(window_).x), static_cast<unsigned int>(sf::Mouse::getPosition(window_).y));
+                    minefield::tile &tile_at_mouse_pos = field_.tile_at(field_.screen_to_grid(mouse_pos));
+                    switch (tile_at_mouse_pos.st) {
+                        case minefield::tile::state::hidden:
+                            tile_at_mouse_pos.st = minefield::tile::state::flagged;
+                            break;
+
+                        case minefield::tile::state::flagged:
+                            tile_at_mouse_pos.st = minefield::tile::state::hidden;
+                    }
                 }
 
                 break;

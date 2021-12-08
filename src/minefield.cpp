@@ -3,32 +3,44 @@
 #include "minefield.h"
 
 void minefield::tile::draw(buffer& buff) {
-    const bool visible = !(st == state::hidden);
-    const unsigned int edge_size = visible ? size / 12 : size / 8;
+    const unsigned int edge_size = st == state::revealed ? size / 12 : size / 8;
     const unsigned int all_but_edge = size - edge_size;
 
-    if (visible) {
-        buff.draw_rect(pos, {size, edge_size}, dark);
-        buff.draw_rect({pos.x, pos.y + all_but_edge}, {size, edge_size}, dark);
-        buff.draw_rect({pos.x, pos.y + edge_size}, {edge_size, all_but_edge}, dark);
-        buff.draw_rect({pos.x + all_but_edge, pos.y + edge_size}, {edge_size, all_but_edge}, dark);
+    switch (st) {
+        case state::revealed:
+            buff.draw_rect(pos, {size, edge_size}, dark);
+            buff.draw_rect({pos.x, pos.y + all_but_edge}, {size, edge_size}, dark);
+            buff.draw_rect({pos.x, pos.y + edge_size}, {edge_size, all_but_edge}, dark);
+            buff.draw_rect({pos.x + all_but_edge, pos.y + edge_size}, {edge_size, all_but_edge}, dark);
 
-        if (has_mine) {
             buff.draw_rect(pos + edge_size, {size - (edge_size * 2)}, mid);
-            buff.draw_rect(pos + (edge_size * 4), {size - (edge_size * 8)}, sf::Color::Black);
 
-        }
-        else buff.draw_rect(pos + edge_size, {size - (edge_size * 2)}, mid);
-    } else {
-        buff.draw_rect(pos, {edge_size, all_but_edge}, dark);
-        buff.draw_rect({pos.x, pos.y + all_but_edge}, {size, edge_size}, dark);
+            if (has_mine) buff.draw_rect(pos + (edge_size * 4), {size - (edge_size * 8)}, sf::Color::Black);
+            break;
+        case state::hidden:
+            buff.draw_rect(pos, {edge_size, all_but_edge}, dark);
+            buff.draw_rect({pos.x, pos.y + all_but_edge}, {size, edge_size}, dark);
 
-        buff.draw_tri_tr(pos, edge_size, light);
-        buff.draw_rect({pos.x + edge_size, pos.y}, {all_but_edge, edge_size}, light);
-        buff.draw_rect({pos.x + all_but_edge, pos.y + edge_size}, {edge_size, all_but_edge - edge_size}, light);
-        buff.draw_tri_tr({pos.x + all_but_edge, pos.y + all_but_edge}, edge_size, light);
+            buff.draw_tri_tr(pos, edge_size, light);
+            buff.draw_rect({pos.x + edge_size, pos.y}, {all_but_edge, edge_size}, light);
+            buff.draw_rect({pos.x + all_but_edge, pos.y + edge_size}, {edge_size, all_but_edge - edge_size}, light);
+            buff.draw_tri_tr({pos.x + all_but_edge, pos.y + all_but_edge}, edge_size, light);
 
-        buff.draw_rect({pos.x + edge_size, pos.y + edge_size}, {all_but_edge - edge_size}, mid);        
+            buff.draw_rect({pos.x + edge_size, pos.y + edge_size}, {all_but_edge - edge_size}, mid);
+            break;
+
+        case state::flagged:
+            buff.draw_rect(pos, {edge_size, all_but_edge}, dark);
+            buff.draw_rect({pos.x, pos.y + all_but_edge}, {size, edge_size}, dark);
+
+            buff.draw_tri_tr(pos, edge_size, light);
+            buff.draw_rect({pos.x + edge_size, pos.y}, {all_but_edge, edge_size}, light);
+            buff.draw_rect({pos.x + all_but_edge, pos.y + edge_size}, {edge_size, all_but_edge - edge_size}, light);
+            buff.draw_tri_tr({pos.x + all_but_edge, pos.y + all_but_edge}, edge_size, light);
+
+            buff.draw_rect({pos.x + edge_size, pos.y + edge_size}, {all_but_edge - edge_size}, mid);
+            buff.draw_tri_br(pos + (edge_size * 2), {size - (edge_size * 4)}, sf::Color::Red);
+            break;
     }    
 }
 
