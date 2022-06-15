@@ -1,10 +1,10 @@
-CC=g++
+CC=gcc
 INC=-I./include/ -I/usr/include -I/usr/local/include/
-LIB=-lsfml-system -lsfml-window -lsfml-graphics -lsfml-audio -lm
+LIB=-lcsfml-system -lcsfml-window -lcsfml-graphics -lcsfml-audio -lm
 
-CFLAGS=
+CFLAGS=-ansi -pedantic
 
-SRC=main.cpp buffer.cpp minefield.cpp vec2.cpp
+SRC=main.c buffer.c minefield.c vec2.c
 OBJ=main.o buffer.o minefield.o vec2.o
 
 BIN=minesweeper
@@ -34,7 +34,7 @@ $(BIN): $(OBJ)
 	rm -rf *.o
 	@echo "COMPILED SUCCESSFULLY"
 
-%.o: src/%.cpp
+%.o: src/%.c
 	$(CC) $(CFLAGS) -c $^ $(INC)
 
 clean:
