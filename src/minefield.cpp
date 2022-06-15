@@ -57,7 +57,7 @@ minefield::minefield(const vec2<unsigned int> &pos, const unsigned int &mines): 
     std::uniform_int_distribution<unsigned int> xrand(0, dimensions.x - 1);
     std::uniform_int_distribution<unsigned int> yrand(0, dimensions.y - 1);
 
-    for (int i = 0; i < mines; i++) {        
+    for (unsigned int i = 0; i < mines; i++) {        
         vec2<unsigned int> spawn_pos;
         tile *current = nullptr;
 

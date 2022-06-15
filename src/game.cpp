@@ -29,7 +29,7 @@ void game::poll() {
                 window_.close();
                 break;
 
-            case sf::Event::MouseButtonPressed:
+            case sf::Event::MouseButtonPressed: {
                 const auto mouse_pos = vec2<uint32_t>(static_cast<unsigned int>(sf::Mouse::getPosition(window_).x), static_cast<unsigned int>(sf::Mouse::getPosition(window_).y));
                 minefield::tile &tile_at_mouse_pos = field_.tile_at(field_.screen_to_grid(mouse_pos));
 
@@ -45,10 +45,15 @@ void game::poll() {
 
                         case minefield::tile::state::flagged:
                             tile_at_mouse_pos.st = minefield::tile::state::hidden;
+
+						default:
+							break;
                     }
                 }
+            } break;
 
-                break;
+			default:
+				break;
         }
     }
 }
