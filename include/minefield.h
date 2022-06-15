@@ -3,39 +3,37 @@
 
 #include "buffer.h"
 
-struct minefield {
-    struct tile {
-        enum state : const unsigned char {
-            hidden,
-            revealed,
-            flagged
-        };
+#define TILE_SIZE		32
 
-        tile() = default;
+#define TILE_DARK		{60, 60, 60}
+#define TILE_MID		{140, 140, 140}
+#define TILE_LIGHT		{210, 210, 210}
 
-        static constexpr unsigned int size = 32;
-        const sf::Color dark =  { 60,  60,  60};
-        const sf::Color mid =   {140, 140, 140};
-        const sf::Color light = {210, 210, 210};
-        vec2<unsigned int> pos;
-        
-        state st;
-        bool has_mine = false;
+#define FIELD_WIDTH		20
+#define FIELD_HEIGHT	16
+#define FIELD_DIMENSION	(FIELD_WIDTH * FIELD_HEIGHT)
 
-        inline void reveal() {st = state::revealed;}
-        void draw(buffer& buff);
-    };
-
-    minefield(const vec2<unsigned int> &pos, const unsigned int &mines);
-
-    static constexpr vec2<unsigned int> dimensions{20, 16};
-    tile tiles[dimensions.x * dimensions.y];
-    vec2<unsigned int> screen_pos;
-
-    void draw(buffer &buff);
-
-    inline vec2<unsigned int> screen_to_grid(const vec2<unsigned int> &mouse_pos) {return (mouse_pos - screen_pos) / tile::size;}
-    inline tile &tile_at(const vec2<unsigned int> &pos) {return tiles[pos.y * dimensions.x + pos.x];}
+enum tile_state_t {
+	TS_HIDDEN,
+	TS_REVEALED,
+	TS_FLAGGED
 };
+
+struct tile_t {
+    vec2u_t pos;
+    tile_state_t st;
+    bool has_mine = false;
+};
+
+void tile_draw(const tile_t t, buffer_t *b);
+
+struct minefield_t {
+    tile_t tiles[FIELD_DIMENSION];
+    vec2u_t screen_pos;
+
+};
+
+minefield_t minefield_create(const vec2u_t &pos, const uint32_t &mines);
+void minefield_draw(minefield_t *m, buffer_t *b);
 
 #endif

@@ -1,67 +1,40 @@
 #ifndef VEC2_H
 #define VEC2_H
 
-#include <cmath>
-
-template <typename T>
-struct vec2 {
-    T x;
-    T y;
-
-    vec2() = default;
-    constexpr vec2(const T &x, const T &y): x(x), y(y) {}
-    constexpr vec2(const T &both): x(both), y(both) {}
-
-    template <typename U>
-    explicit vec2(const vec2<U> &vec): x(static_cast<T>(vec.x)), y(static_cast<T>(vec.y)) {}
-
-    constexpr vec2 operator+(const vec2 &other) const {
-        return {x + other.x, y + other.y};
-    }
-
-    vec2& operator+=(const vec2 &other) {
-        return *this = *this + other;
-    }
-
-    constexpr vec2 operator-(const vec2 &other) const {
-        return {x - other.x, y - other.y};
-    }
-
-    vec2& operator-=(const vec2 &other) {
-        return *this = *this - other;
-    }
-
-    constexpr vec2 operator*(const T &other) const {
-        return {x * other, y * other};
-    }
-
-    vec2& operator*=(const float &other) {
-        return *this = *this * other;
-    }
-
-    constexpr vec2 operator/(const T &other) const {
-        return {x / other, y / other};
-    }
-
-    vec2& operator/=(const float &other) {
-        return *this = *this / other;
-    }
-
-    constexpr float get_mag_sq() const {
-        return x * x + y * y;
-    }
-
-    constexpr float get_mag() const {
-        return sqrtf(get_mag_sq());
-    }
-
-    constexpr vec2 get_normalized() const {
-        return *this * (1.0f / (get_mag() > 0.0f ? get_mag() : 1.0f));
-    }
-
-    vec2& normalize() {
-        return *this = *this * (1.0f / (get_mag() > 0.0f ? get_mag() : 1.0f));
-    }
+struct vec2f_t {
+    float x;
+    float y;
 };
+
+struct vec2i_t {
+	int x;
+	int y;
+};
+
+struct vec2u_t {
+	unsigned int x;
+	unsigned int y;
+};
+
+vec2f_t vec2f_create(const float x, const float y);
+vec2f_t vec2f_create_both(const float b);
+vec2f_t vec2f_add(const vec2f_t a, const vec2f_t b);
+vec2f_t vec2f_sub(const vec2f_t a, const vec2f_t b);
+vec2f_t vec2f_mul(const vec2f_t a, const vec2f_t b);
+vec2f_t vec2f_scale(const vec2f_t a, const float b);
+
+vec2i_t vec2i_create(const int x, const int y);
+vec2i_t vec2i_create_both(const int b);
+vec2i_t vec2i_add(const vec2i_t a, const vec2i_t b);
+vec2i_t vec2i_sub(const vec2i_t a, const vec2i_t b);
+vec2i_t vec2i_mul(const vec2i_t a, const vec2i_t b);
+vec2i_t vec2i_scale(const vec2i_t a, const float b);
+
+vec2u_t vec2u_create(const unsigned int x, const unsigned int y);
+vec2u_t vec2u_create_both(const unsigned int b);
+vec2u_t vec2u_add(const vec2u_t a, const vec2u_t b);
+vec2u_t vec2u_sub(const vec2u_t a, const vec2u_t b);
+vec2u_t vec2u_mul(const vec2u_t a, const vec2u_t b);
+vec2u_t vec2u_scale(const vec2u_t a, const float b);
 
 #endif

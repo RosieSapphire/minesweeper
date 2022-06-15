@@ -1,29 +1,25 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
-#include "rect.h"
+#include <SFML/Graphics.hpp>
+#include "vec2.h"
 
-struct buffer {
-    explicit buffer();
+#define BUFFER_WIDTH		704
+#define BUFFER_HEIGHT		576
+#define BUFFER_DIMENSION	(BUFFER_WIDTH * BUFFER_HEIGHT)
 
-    void clear(const sf::Color &color = sf::Color::Black);
-    void put_pixel(const vec2<unsigned int> &pos, const sf::Color &color);
-
-    void draw_rect(const vec2<unsigned int> &pos, const vec2<unsigned int> &size, const sf::Color &color = sf::Color::White);
-    void draw_rect(const rect<unsigned int> &r);
-
-    void draw_tri_tl(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color);
-    void draw_tri_tr(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color);
-    void draw_tri_bl(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color);
-    void draw_tri_br(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color);
-
-    sf::VertexArray get_array() const {return array_;}
-    static constexpr vec2<unsigned int> get_size() {return buffer_size;}
-
-private:
-    sf::VertexArray array_;
-    static constexpr vec2<unsigned int> buffer_size{704, 576};
-    static constexpr unsigned int buffer_dim = buffer_size.x * buffer_size.y;
+struct buffer_t {
+    sf::VertexArray vertex_array;
 };
+
+void buffer_clear(buffer_t *b, const sf::Color &color = sf::Color::Black);
+void buffer_put_pixel(buffer_t *b, const vec2u_t &pos, const sf::Color &color);
+
+void buffer_draw_rect(buffer_t *b, const vec2u_t &pos, const vec2u_t &size, const sf::Color &color = sf::Color::White);
+
+void buffer_draw_tri_tl(buffer_t *b, const vec2u_t &pos, const uint32_t &size, const sf::Color &color);
+void buffer_draw_tri_tr(buffer_t *b, const vec2u_t &pos, const uint32_t &size, const sf::Color &color);
+void buffer_draw_tri_bl(buffer_t *b, const vec2u_t &pos, const uint32_t &size, const sf::Color &color);
+void buffer_draw_tri_br(buffer_t *b, const vec2u_t &pos, const uint32_t &size, const sf::Color &color);
 
 #endif

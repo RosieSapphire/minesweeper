@@ -4,8 +4,8 @@ LIB=-lsfml-system -lsfml-window -lsfml-graphics -lsfml-audio -lm
 
 CFLAGS=
 
-SRC=main.cpp game.cpp buffer.cpp minefield.cpp
-OBJ=main.o game.o buffer.o minefield.o
+SRC=main.cpp buffer.cpp minefield.cpp vec2.cpp
+OBJ=main.o buffer.o minefield.o vec2.o
 
 BIN=minesweeper
 

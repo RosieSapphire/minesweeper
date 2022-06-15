@@ -2,78 +2,71 @@
 
 #include <cassert>
 
-buffer::buffer():
-    array_(sf::Points, buffer_dim) {}
-
-void buffer::clear(const sf::Color &color) {
-    for (unsigned int x = 0; x < buffer_size.x; x++) {
-        for (unsigned int y = 0; y < buffer_size.y; y++) {
-            put_pixel({static_cast<unsigned int>(x), static_cast<unsigned int>(y)}, color);
+void buffer_clear(buffer_t *b, const sf::Color &color) {
+    for(unsigned int x = 0; x < BUFFER_WIDTH; x++) {
+        for(unsigned int y = 0; y < BUFFER_HEIGHT; y++) {
+            buffer_put_pixel(b, {static_cast<unsigned int>(x), static_cast<unsigned int>(y)}, color);
         }
     }
 }
 
-void buffer::put_pixel(const vec2<unsigned int> &pos, const sf::Color &color) {
+void buffer_put_pixel(buffer_t *b, const vec2u_t &pos, const sf::Color &color) {
     assert(pos.x >= 0);
-    assert(pos.x < buffer_size.x);
+    assert(pos.x < BUFFER_WIDTH);
     assert(pos.y >= 0);
-    assert(pos.y < buffer_size.y);
+    assert(pos.y < BUFFER_HEIGHT);
 
-    sf::Vertex &current_pixel = array_[pos.y * buffer_size.x + pos.x];
+    sf::Vertex &current_pixel = b->vertex_array[pos.y * BUFFER_WIDTH + pos.x];
     current_pixel.position = {static_cast<float>(pos.x), static_cast<float>(pos.y)};
     current_pixel.color = color;
 }
 
-void buffer::draw_rect(const vec2<unsigned int> &pos, const vec2<unsigned int> &size, const sf::Color &color) {
-    for (unsigned int x = pos.x; x < pos.x + size.x; x++) {
-        for (unsigned int y = pos.y; y < pos.y + size.y; y++) {
-            put_pixel({static_cast<unsigned int>(x), static_cast<unsigned int>(y)}, color);
+void buffer_draw_rect(buffer_t *b, const vec2u_t &pos, const vec2u_t &size, const sf::Color &color) {
+    for(unsigned int x = pos.x; x < pos.x + size.x; x++) {
+        for(unsigned int y = pos.y; y < pos.y + size.y; y++) {
+            buffer_put_pixel(b, {static_cast<unsigned int>(x), static_cast<unsigned int>(y)}, color);
         }
     }
 }
 
-void buffer::draw_rect(const rect<unsigned int> &r) {
-    draw_rect(r.pos, r.size, r.color);
-}
-
-void buffer::draw_tri_tl(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color) {
+void buffer_draw_tri_tl(buffer_t *b, const vec2u_t &pos, const unsigned int &size, const sf::Color &color) {
     unsigned int current_length = size;
-    for (unsigned int y = 0; y < size; y++) {
-        for (unsigned int x = 0; x < current_length; x++) {
-            put_pixel({pos.x + x, pos.y + y}, color);
+    for(unsigned int y = 0; y < size; y++) {
+        for(unsigned int x = 0; x < current_length; x++) {
+            buffer_put_pixel(b, {pos.x + x, pos.y + y}, color);
         }
 
         current_length--;
     }
 }
 
-void buffer::draw_tri_tr(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color) {
+void buffer_draw_tri_tr(buffer_t *b, const vec2u_t &pos, const unsigned int &size, const sf::Color &color) {
     unsigned int current_length = size;
-    for (unsigned int y = 0; y < size; y++) {
-        for (unsigned int x = 0; x < current_length; x++) {
-            put_pixel({pos.x + (size - x) - 1, pos.y + y}, color);
+    for(unsigned int y = 0; y < size; y++) {
+        for(unsigned int x = 0; x < current_length; x++) {
+            buffer_put_pixel(b, {pos.x + (size - x) - 1, pos.y + y}, color);
         }
 
         current_length--;
     }
 }
 
-void buffer::draw_tri_bl(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color) {
+void buffer_draw_tri_bl(buffer_t *b, const vec2u_t &pos, const unsigned int &size, const sf::Color &color) {
     unsigned int current_length = 1;
-    for (unsigned int y = 0; y < size; y++) {
-        for (unsigned int x = 0; x < current_length; x++) {
-            put_pixel({pos.x + x, pos.y + y}, color);
+    for(unsigned int y = 0; y < size; y++) {
+        for(unsigned int x = 0; x < current_length; x++) {
+            buffer_put_pixel(b, {pos.x + x, pos.y + y}, color);
         }
 
         current_length++;
     }
 }
 
-void buffer::draw_tri_br(const vec2<unsigned int> &pos, const unsigned int &size, const sf::Color &color) {
+void buffer_draw_tri_br(buffer_t *b, const vec2u_t &pos, const unsigned int &size, const sf::Color &color) {
     unsigned int current_length = 1;
-    for (unsigned int y = 0; y < size; y++) {
-        for (unsigned int x = 0; x < current_length; x++) {
-            put_pixel({pos.x + (size - x) - 1, pos.y + y}, color);
+    for(unsigned int y = 0; y < size; y++) {
+        for(unsigned int x = 0; x < current_length; x++) {
+            buffer_put_pixel(b, {pos.x + (size - x) - 1, pos.y + y}, color);
         }
 
         current_length++;
