@@ -104,9 +104,9 @@ bool window_is_running(void)
 	return !glfwWindowShouldClose(handle);
 }
 
-void window_clear(struct rgba c)
+void window_clear(float r, float g, float b, float a)
 {
-	glClearColor(c.r, c.g, c.b, c.a);
+	glClearColor(r, g, b, a);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 

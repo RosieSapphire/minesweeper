@@ -10,7 +10,7 @@ int main(void)
 	tiles_init();
 
 	while(window_is_running()) {
-		window_clear((struct rgba){0.2f, 0.3f, 0.2f, 1.0f});
+		window_clear(0.2f, 0.3f, 0.2f, 1.0f);
 
 		tiles_update(WIN_HEIGHT);
 		tiles_draw(WIN_WIDTH, WIN_HEIGHT);
