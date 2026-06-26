@@ -1,5 +1,8 @@
+#include <stdio.h>
+
 #include "window.h"
 #include "renderer.h"
+#include "input.h"
 #include "tile.h"
 
 #define WIN_WIDTH  (TILES_X * TILE_SIZE)
@@ -16,15 +19,24 @@ static struct renderer renderer = {
         .flags = REND_FLAGS_NONE,
 };
 
+static struct input input = {
+        .flags = INPUTS_NONE,
+};
+
 int main(void)
 {
         window_init(&window, "Minesweeper", WIN_WIDTH, WIN_HEIGHT);
-        renderer_init(&renderer);
+        renderer_init(&renderer, &window);
+        input = input_init();
         tiles_init();
 
         while (window_running_get(&window)) {
-                window_poll(&window);
-                tiles_update(&window);
+#if 0
+                static size_t ind = 0ul;
+#endif /* #if 0 */
+
+                input = input_poll(input, &window);
+                tiles_update(&window, input);
 
                 renderer_clear(0.2f, 0.3f, 0.2f, 1.0f, false);
                 tiles_draw(&window);

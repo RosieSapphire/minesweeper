@@ -4,12 +4,26 @@
 
 #include "renderer.h"
 
-void renderer_init(struct renderer *const ren)
+void renderer_init(struct renderer *const restrict ren,
+                   const struct window *const restrict wnd)
 {
         assertf(ren, "Trying to init NULL renderer.");
         assertf(!ren->flags,
                 "Renderer already has flags: 0x%.8X.",
                 ren->flags);
+
+        assertf(wnd, "Trying to init renderer with NULL window.");
+        assertf(wnd->width,
+                "Trying to init renderer with window of width 0.");
+        assertf(wnd->height,
+                "Trying to init renderer with window of height 0.");
+
+        gladLoadGL();
+        glViewport(0, 0, (int)wnd->width, (int)wnd->height);
+        glDisable(GL_DEPTH);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
 
         ren->flags |= REND_FLAG_IS_INIT;
 }

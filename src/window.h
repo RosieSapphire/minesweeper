@@ -38,9 +38,7 @@ extern void window_running_set(struct window *const wnd, const bool t);
 extern bool window_running_get(const struct window *const wnd);
 extern void window_terminate(struct window *const wnd);
 
-/* TODO: Extract these to another file! */
-extern bool window_lmb_held(const struct window *const wnd);
-extern bool window_rmb_held(const struct window *const wnd);
+/* FIXME: Move this elsewhere. */
 extern void window_mouse_pos_get(const struct window *const restrict wnd,
                                  int16_t *const restrict o);
 

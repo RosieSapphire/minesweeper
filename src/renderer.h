@@ -30,7 +30,8 @@ struct renderer {
         uint32_t flags;
 };
 
-extern void renderer_init(struct renderer *const ren);
+extern void renderer_init(struct renderer *const restrict ren,
+                          const struct window *const restrict wnd);
 extern void renderer_terminate(struct renderer *const ren);
 
 extern void renderer_clear(const float r,

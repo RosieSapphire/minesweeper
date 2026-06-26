@@ -6,6 +6,7 @@
  ************/
 
 #include "window.h"
+#include "input.h"
 
 /***********
  * DEFINES *
@@ -35,7 +36,8 @@ enum {
  ******************************/
 
 extern void tiles_init(void);
-extern void tiles_update(const struct window *const wnd);
+extern void tiles_update(const struct window *const wnd,
+                         const struct input         inp);
 extern void tiles_draw(const struct window *const wnd);
 extern void tiles_terminate(void);
 

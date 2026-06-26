@@ -9,20 +9,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "error.h"
 
 #include "window.h"
-
-/*********************
- * PRIVATE VARIABLES *
- *********************/
-
-/* FIXME: Move these to `input.c` or something. */
-static bool lmb_held_prev = false;
-static bool rmb_held_prev = false;
 
 static void window_key_callback(GLFWwindow *const w,
                                 int               k,
@@ -97,14 +88,6 @@ void window_init(struct window *const restrict wnd,
 
         glfwMakeContextCurrent(wnd->handle);
         glfwSetKeyCallback(wnd->handle, window_key_callback);
-
-        /* FIXME: Move this to another block of logic! */
-        gladLoadGL();
-        glViewport(0, 0, (int)width, (int)height);
-        glDisable(GL_DEPTH);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        glFrontFace(GL_CCW);
 }
 
 void window_running_set(struct window *const wnd, const bool t)
@@ -130,28 +113,6 @@ void window_terminate(struct window *const wnd)
         glfwDestroyWindow(wnd->handle);
         memset(wnd->name, 0, WINDOW_NAME_MAX);
         glfwTerminate();
-}
-
-bool window_lmb_held(const struct window *const wnd)
-{
-        const bool now =
-                glfwGetMouseButton(wnd->handle, GLFW_MOUSE_BUTTON_LEFT);
-        const bool dif = now && !lmb_held_prev;
-
-        lmb_held_prev = now;
-
-        return (dif);
-}
-
-bool window_rmb_held(const struct window *const wnd)
-{
-        int mouse_button_right_now =
-                glfwGetMouseButton(wnd->handle, GLFW_MOUSE_BUTTON_RIGHT);
-        int ret = mouse_button_right_now && !rmb_held_prev;
-
-        rmb_held_prev = mouse_button_right_now;
-
-        return (ret);
 }
 
 void window_mouse_pos_get(const struct window *const restrict wnd,

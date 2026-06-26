@@ -164,24 +164,29 @@ static bool is_game_won(void)
         return (bomb_cnt == hidden_cnt);
 }
 
-void tiles_update(const struct window *const wnd)
+void tiles_update(const struct window *const wnd, const struct input inp)
 {
+        static bool printed_message = false;
+
         int16_t mouse[2];
 
         if (is_game_lost)
                 return;
 
-        if (is_game_won())
+        if (is_game_won() && !printed_message) {
                 printf("YOU'RE WINNER!\n");
+                printed_message = true;
+                return;
+        }
 
         mouse_pos_get_as_tile(wnd, mouse);
 
-        if (window_lmb_held(wnd)) {
+        if (inp.flags & INPUT_LMB_PRESS) {
                 tile_reveal((uint16_t)mouse[0], (uint16_t)mouse[1]);
                 return;
         }
 
-        if (window_rmb_held(wnd)) {
+        if (inp.flags & INPUT_RMB_PRESS) {
                 tiles[mouse[0]][mouse[1]].flags ^= TILE_FLAG_IS_FLAGGED;
                 return;
         }
