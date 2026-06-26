@@ -1,21 +1,31 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
+#include <sys/param.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "renderer.h"
+#include "error.h"
 
 #include "tile.h"
 
-static GLuint       tile_tex;
-static GLuint       tile_bomb_tex;
-static GLuint       tile_flagged_tex;
-static GLuint       tile_empty_tex[9];
-static unsigned int vao, vbo, ebo;
+/* TODO: Move somewhere else maybe? */
+struct model {
+        uint32_t *idx_arr;
+        uint32_t  idx_cnt;
+        uint32_t  vao;
+        uint32_t  vbo;
+        uint32_t  ebo;
+};
 
-static const int indis[6] = { 0, 1, 2, 2, 1, 3 };
+static uint32_t tile_tex          = 0u;
+static uint32_t tile_bomb_tex     = 0u;
+static uint32_t tile_flagged_tex  = 0u;
+static uint32_t tile_empty_tex[9] = { 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
+static struct model tile_model    = { .vao = 0u, .vbo = 0u, .ebo = 0u };
 
 struct tile {
         float    col[3];
@@ -26,23 +36,44 @@ static bool is_game_lost = false;
 
 static struct tile tiles[TILES_X][TILES_Y];
 
-void tiles_init(void)
+static void tiles_load_textures(struct renderer *const rnd)
 {
-        tile_tex         = texture_load("res/tile.png");
-        tile_bomb_tex    = texture_load("res/tile_bomb.png");
-        tile_flagged_tex = texture_load("res/tile_flagged.png");
+        tile_tex         = renderer_texture_load(rnd, "res/tile.png");
+        tile_bomb_tex    = renderer_texture_load(rnd, "res/tile_bomb.png");
+        tile_flagged_tex = renderer_texture_load(rnd, "res/tile_flagged.png");
 
-        for (int i = 0; i < 9; i++) {
+        for (uint8_t i = 0; i < 9u; i++) {
                 char buf[128];
-                sprintf(buf, "res/tile_empty_%d.png", i);
-                tile_empty_tex[i] = texture_load(buf);
+                sprintf(buf, "res/tile_empty_%u.png", i);
+                tile_empty_tex[i] = renderer_texture_load(rnd, buf);
         }
+}
 
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
+static void tiles_build_model(struct model *const restrict mdl,
+                              const uint32_t *const restrict idx_arr,
+                              const uint32_t idx_cnt)
+{
+        /* Ensure sane input. */
+        assertf(mdl, "Model pointer is NULL.");
+        assertf(!mdl->idx_arr,
+                "Index Array already allocated: <%p>.",
+                mdl->idx_arr);
+        assertf(!mdl->idx_cnt, "Index Count is already %lu.", mdl->idx_cnt);
+        assertf(!mdl->vao, "VAO already initialized: %u.", mdl->vao);
+        assertf(!mdl->vbo, "VBO already initialized: %u.", mdl->vbo);
+        assertf(!mdl->ebo, "EBO already initialized: %u.", mdl->ebo);
 
-        glGenBuffers(1, &vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        assertf(idx_arr, "Input index array is NULL.");
+        assertf(idx_cnt, "Input index count is 0.");
+
+        /* Allocate buffers. */
+        glGenVertexArrays(1, &mdl->vao);
+        assertf(mdl->vao, "Failed to generate VAO.");
+        glBindVertexArray(mdl->vao);
+
+        glGenBuffers(1, &mdl->vbo);
+        assertf(mdl->vbo, "Failed to generate VBO.");
+        glBindBuffer(GL_ARRAY_BUFFER, mdl->vbo);
         glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_DYNAMIC_DRAW);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0,
@@ -52,16 +83,35 @@ void tiles_init(void)
                               sizeof(float) * 4,
                               NULL);
 
-        glGenBuffers(1, &ebo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glGenBuffers(1, &mdl->ebo);
+        assertf(mdl->ebo, "Failed to generate EBO.");
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mdl->ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                     sizeof(indis),
-                     indis,
+                     sizeof(*idx_arr) * idx_cnt,
+                     idx_arr,
                      GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
+
+        /* Store the index buffer. */
+        mdl->idx_cnt = idx_cnt;
+        mdl->idx_arr = (uint32_t *)malloc(sizeof(*idx_arr) * idx_cnt);
+        assertf(mdl->idx_arr,
+                "Failed to allocate stored index "
+                "array of count %lu and size %lu.",
+                idx_cnt,
+                idx_cnt * sizeof(*idx_arr));
+        (void)memcpy(mdl->idx_arr, idx_arr, idx_cnt * sizeof(*idx_arr));
+}
+
+void tiles_init(struct renderer *const rnd)
+{
+        tiles_load_textures(rnd);
+        tiles_build_model(&tile_model,
+                          (const uint32_t[6u]) { 0u, 1u, 2u, 2u, 1u, 3u },
+                          6u);
 
         srand((uint32_t)time(NULL));
 
@@ -70,6 +120,7 @@ void tiles_init(void)
                         static const float r255 = 1.0f / 255.0f;
                         struct tile *const cur  = &tiles[x][y];
 
+                        /* FIXME: What the fuck does this even do?! */
                         for (uint8_t i = 0u; i < 3u; ++i)
                                 cur->col[i] = (float)((uint8_t)rand()) * r255;
 
@@ -83,10 +134,10 @@ void tiles_init(void)
 static uint32_t tile_get_surrounding_bombs_count(const uint16_t tx,
                                                  const uint16_t ty)
 {
-        const uint16_t x_start = (uint16_t)max(0, tx - 1);
-        const uint16_t y_start = (uint16_t)max(0, ty - 1);
-        const uint16_t x_end   = (uint16_t)min(TILES_X, tx + 2);
-        const uint16_t y_end   = (uint16_t)min(TILES_Y, ty + 2);
+        const uint16_t x_start = (uint16_t)MAX(0, tx - 1);
+        const uint16_t y_start = (uint16_t)MAX(0, ty - 1);
+        const uint16_t x_end   = (uint16_t)MIN(TILES_X, tx + 2);
+        const uint16_t y_end   = (uint16_t)MIN(TILES_Y, ty + 2);
 
         uint32_t num = 0u;
 
@@ -130,10 +181,10 @@ static void tile_reveal(const uint16_t tx, const uint16_t ty)
         if (tile_get_surrounding_bombs_count(tx, ty))
                 return;
 
-        x_start = (uint16_t)max(0, tx - 1);
-        y_start = (uint16_t)max(0, ty - 1);
-        x_end   = (uint16_t)min(TILES_X, tx + 2);
-        y_end   = (uint16_t)min(TILES_Y, ty + 2);
+        x_start = (uint16_t)MAX(0, tx - 1);
+        y_start = (uint16_t)MAX(0, ty - 1);
+        x_end   = (uint16_t)MIN(TILES_X, tx + 2);
+        y_end   = (uint16_t)MIN(TILES_Y, ty + 2);
 
         for (uint16_t y = y_start; y < y_end; y++)
                 for (uint16_t x = x_start; x < x_end; x++)
@@ -186,9 +237,10 @@ void tiles_update(const struct window *const wnd, const struct input inp)
         }
 }
 
-static void tile_draw(const struct window *const wnd,
-                      const uint16_t             tx,
-                      const uint16_t             ty)
+static void tile_draw(const struct renderer *const restrict rnd,
+                      const struct window *const restrict wnd,
+                      const uint16_t tx,
+                      const uint16_t ty)
 {
         const uint32_t surround_cnt =
                 tile_get_surrounding_bombs_count(tx, ty);
@@ -222,12 +274,12 @@ static void tile_draw(const struct window *const wnd,
         }
 
         /* FIXME: use matrices! */
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBindVertexArray(tile_model.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, tile_model.vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-        glUseProgram(tile_shader);
+        glUseProgram(rnd->shader);
 
         glBindTexture(GL_TEXTURE_2D, tile_tex);
 
@@ -244,28 +296,41 @@ static void tile_draw(const struct window *const wnd,
         }
 
         glDrawElements(GL_TRIANGLES,
-                       sizeof(indis) / sizeof(*indis),
+                       (GLsizei)tile_model.idx_cnt,
                        GL_UNSIGNED_INT,
-                       indis);
+                       tile_model.idx_arr);
         glBindVertexArray(0);
 }
 
-void tiles_draw(const struct window *const wnd)
+void tiles_draw(const struct renderer *const restrict rnd,
+                const struct window *const restrict wnd)
 {
         for (uint16_t y = 0; y < TILES_Y; y++)
                 for (uint16_t x = 0; x < TILES_X; x++)
-                        tile_draw(wnd, x, y);
+                        tile_draw(rnd, wnd, x, y);
 }
 
-void tiles_terminate(void)
+void tiles_terminate(struct renderer *const rnd)
 {
-        glDeleteVertexArrays(1, &vao);
-        glDeleteBuffers(1, &vbo);
-        glDeleteBuffers(1, &ebo);
+        glDeleteBuffers(1, &tile_model.ebo);
+        tile_model.ebo = 0u;
+        glDeleteBuffers(1, &tile_model.vbo);
+        tile_model.vbo = 0u;
+        glDeleteVertexArrays(1, &tile_model.vao);
+        tile_model.vao     = 0u;
+        tile_model.idx_cnt = 0u;
+        free(tile_model.idx_arr);
+        tile_model.idx_arr = NULL;
 
-        textures_unload(9, tile_empty_tex);
-        textures_unload(1, &tile_flagged_tex);
-        textures_unload(1, &tile_bomb_tex);
-        textures_unload(1, &tile_tex);
-        shader_unload(tile_shader);
+        for (uint8_t i = 0u; i < 9u; ++i) {
+                renderer_texture_unload(rnd, tile_empty_tex[i]);
+                tile_empty_tex[i] = 0u;
+        }
+
+        renderer_texture_unload(rnd, tile_flagged_tex);
+        tile_flagged_tex = 0u;
+        renderer_texture_unload(rnd, tile_bomb_tex);
+        tile_bomb_tex = 0u;
+        renderer_texture_unload(rnd, tile_tex);
+        tile_tex = 0u;
 }

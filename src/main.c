@@ -28,21 +28,21 @@ int main(void)
 {
         window_init(&window, "Minesweeper", WIN_WIDTH, WIN_HEIGHT);
         renderer_init(&renderer, &window);
-        renderer_load_shader(&renderer, "res/vert.glsl", "res/frag.glsl");
+        renderer_shader_load(&renderer, "res/vert.glsl", "res/frag.glsl");
         input = input_init();
-        tiles_init();
+        tiles_init(&renderer);
 
         while (window_running_get(&window)) {
                 input = input_poll(input, &window);
                 tiles_update(&window, input);
 
                 renderer_clear(0.2f, 0.3f, 0.2f, 1.0f, false);
-                tiles_draw(&window);
+                tiles_draw(&renderer, &window);
                 renderer_display_to_window(&window, &renderer);
         }
 
-        tiles_terminate();
-        renderer_unload_shader(&renderer);
+        tiles_terminate(&renderer);
+        renderer_shader_unload(&renderer);
         renderer_terminate(&renderer);
         window_terminate(&window);
 

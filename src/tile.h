@@ -7,6 +7,7 @@
 
 #include "window.h"
 #include "input.h"
+#include "renderer.h"
 
 /***********
  * DEFINES *
@@ -35,10 +36,11 @@ enum {
  * PUBLIC FUNCTION PROTOTYPES *
  ******************************/
 
-extern void tiles_init(void);
+extern void tiles_init(struct renderer *const rnd);
 extern void tiles_update(const struct window *const wnd,
                          const struct input         inp);
-extern void tiles_draw(const struct window *const wnd);
-extern void tiles_terminate(void);
+extern void tiles_draw(const struct renderer *const restrict rnd,
+                       const struct window *const restrict wnd);
+extern void tiles_terminate(struct renderer *const rnd);
 
 #endif

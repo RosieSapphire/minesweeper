@@ -5,6 +5,12 @@
 #include "error.h"
 #include "file_ops.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-macros"
+#define STBI_ASSERT(_x) assertf(_x, "STB Image encountered an error.")
+#pragma clang diagnostic pop
+#include "stb_image.h"
+
 #include "renderer.h"
 
 void renderer_init(struct renderer *const restrict ren,
@@ -28,6 +34,8 @@ void renderer_init(struct renderer *const restrict ren,
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
+        stbi_set_flip_vertically_on_load(0);
+
         ren->flags |= REND_FLAG_IS_INIT;
 }
 
@@ -38,7 +46,7 @@ void renderer_terminate(struct renderer *const ren)
                 "Render was never initialized.");
 
         if (ren->shader)
-                renderer_unload_shader(ren);
+                renderer_shader_unload(ren);
 
         ren->shader = 0u;
         ren->flags &= ~REND_FLAG_IS_INIT;
@@ -84,7 +92,7 @@ static uint32_t shader_part_compile(const char *const path,
         return s;
 }
 
-void renderer_load_shader(struct renderer *const restrict ren,
+void renderer_shader_load(struct renderer *const restrict ren,
                           const char *const restrict vpath,
                           const char *const restrict fpath)
 {
@@ -119,9 +127,120 @@ void renderer_load_shader(struct renderer *const restrict ren,
         ren->shader = p;
 }
 
-void renderer_unload_shader(struct renderer *const restrict ren)
+void renderer_shader_unload(struct renderer *const restrict ren)
 {
+        assertf(ren, "Renderer is NULL.");
+        assertf(ren->shader, "Renderer's shader is 0.");
         glDeleteProgram(ren->shader);
+}
+
+uint32_t renderer_texture_load(struct renderer *const restrict ren,
+                               const char *const restrict path)
+{
+        uint8_t *buf;
+        uint32_t id;
+        int      w, h, c;
+
+        assertf(ren, "Renderer is NULL.");
+        assertf(path, "Texture path is NULL.");
+
+        /* Load the texture itself. */
+        buf = stbi_load(path, &w, &h, &c, 3);
+        assertf(buf, "Failed to load texture from \"%s\".\n", path);
+
+        glGenTextures(1, &id);
+        glBindTexture(GL_TEXTURE_2D, id);
+
+        /* TODO: Add configuration for clamping and scaling mode. */
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        /* FIXME: This won't work for every texture. */
+        glTexImage2D(GL_TEXTURE_2D,
+                     0,
+                     GL_RGB,
+                     w,
+                     h,
+                     0,
+                     GL_RGB,
+                     GL_UNSIGNED_BYTE,
+                     buf);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        stbi_image_free(buf);
+
+        /* Now add it to the array. */
+        if (!ren->tex_cnt) {
+                assertf(!ren->tex_arr,
+                        "Texture count is 0, but array is <%p>; non-null.",
+                        ren->tex_arr);
+                ren->tex_arr = (uint32_t *)malloc(sizeof(*ren->tex_arr) *
+                                                  ++ren->tex_cnt);
+                assertf(ren->tex_arr,
+                        "Failed to allocate texture array for \"%s\".",
+                        path);
+        } else {
+                uint32_t *arr_new;
+
+                assertf(ren->tex_arr,
+                        "Texture count is %lu, but array is NULL.",
+                        ren->tex_cnt);
+                arr_new = (uint32_t *)realloc(ren->tex_arr,
+                                              sizeof(*ren->tex_arr) *
+                                                      ++ren->tex_cnt);
+                assertf(arr_new,
+                        "Failed to reallocate texture array for \"%s\" for count %lu.",
+                        path,
+                        ren->tex_cnt);
+                ren->tex_arr = arr_new;
+        }
+
+        ren->tex_arr[ren->tex_cnt - 1u] = id;
+
+        return id;
+}
+
+static uint32_t renderer_texture_get_index(const struct renderer *const rnd,
+                                           const uint32_t               id)
+{
+        uint32_t  cnt;
+        uint32_t *arr;
+
+        assertf(rnd, "Renderer is NULL.");
+        assertf(rnd->tex_cnt && rnd->tex_arr,
+                "Renderer has no textures to find [cnt=%lu arr=<%p>].\n",
+                rnd->tex_cnt,
+                rnd->tex_arr);
+        assertf(id, "Not allowed to use Tex ID of 0; invalid ID value.");
+
+        cnt = rnd->tex_cnt;
+        arr = rnd->tex_arr;
+        for (uint32_t i = 0u; i < cnt; ++i)
+                if (id == arr[i])
+                        return i;
+
+        assertf(0,
+                "Failed to find texture id %lu "
+                "in array <%p> of %lu elements.",
+                id,
+                arr,
+                cnt);
+        return UINT32_MAX;
+}
+
+void renderer_texture_unload(struct renderer *const restrict ren,
+                             const uint32_t id)
+{
+        const uint32_t ind = renderer_texture_get_index(ren, id);
+
+        assertf(ind != UINT32_MAX,
+                "Failed to unload texture id %lu from renderer's "
+                "array of %lu; couldn't find it in list.",
+                id,
+                ren->tex_cnt);
+
+        glDeleteTextures(1, &id);
 }
 
 void renderer_clear(const float r,
