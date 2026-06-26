@@ -1,24 +1,76 @@
-CC=cc
-CFLAGS=-std=c99 -O2 -Wall -Wextra -g3
-INC=-Iinclude
-LIB=$(shell pkg-config --libs glfw3) $(shell pkg-config --libs glew) -lm
-BIN=minesweeper
+ifdef VERBOSE
+	V :=
+else
+	V := @
+endif
 
-SRC=$(wildcard src/*.c)
-OBJ=$(patsubst src/%.c,%.o,$(SRC))
+BUILD_DIR := build
+PROG_BIN  := $(BUILD_DIR)/minesweeper
 
-default: $(BIN)
+WARN_INC   := all \
+	      extra \
+	      everything
+WARN_EXC   := reserved-identifier \
+	      reserved-macro-identifier \
+	      unsafe-buffer-usage
+WARN_FLAGS := $(WARN_INC:%=-W%) $(WARN_EXC:%=-Wno-%)
+STD_FLAGS  := -std=c99 -pedantic
 
-$(BIN): $(OBJ)
-	@echo Linking executable...
-	@$(CC) $(CFLAGS) $^ -o $@ $(LIB)
-	@echo Successfully generated "'"$(BIN)"'"!
-	@rm -f $(OBJ)
+CC := clang-20
 
-%.o: src/%.c
-	@echo Compiling source file "'"$^"'"...
-	@$(CC) $(CFLAGS) -c $^ $(INC)
+VENDOR_DIR := vendor
+GLFW_DIR := vendor/GLFW
+GLAD_DIR := vendor/glad
+STB_DIR  := vendor/stb
+
+LNK_FLAGS := -lm
+ifdef DEBUG
+	ifdef ASAN
+		ASAN_FLAGS := -fsanitize=address,leak,null,undefined
+	endif
+	OPT_FLAGS  := -Og
+	DBG_FLAGS  := -ggdb3 -DDEBUG
+	LNK_FLAGS += -L$(GLFW_DIR) -l:libglfw3_d.a \
+		     -L$(GLAD_DIR) -l:libglad_d.a \
+		     -L$(STB_DIR) -l:libstb_image_d.a
+else
+	ASAN_FLAGS :=
+	OPT_FLAGS  := -O3 -ffast-math -g0
+	DBG_FLAGS  := -g0 -DNDEBUG
+	LNK_FLAGS += -L$(GLFW_DIR) -l:libglfw3.a \
+		     -L$(GLAD_DIR) -l:libglad.a \
+		     -L$(STB_DIR) -l:libstb_image.a
+endif
+
+CC_FLAGS  := -fdiagnostics-color=never \
+	     $(WARN_FLAGS) \
+	     $(ASAN_FLAGS) \
+	     $(STD_FLAGS) \
+	     $(OPT_FLAGS) \
+	     $(DBG_FLAGS)
+INC_FLAGS := $(patsubst %,-I%/include,$(GLFW_DIR) $(GLAD_DIR) $(STB_DIR))
+
+SRC_DIRS := src
+C_FILES  := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
+O_FILES  := $(C_FILES:%.c=$(BUILD_DIR)/%.o)
+
+.PHONY: clean
+
+all: $(PROG_BIN)
+
+run: $(PROG_BIN)
+	./$<
+
+$(PROG_BIN): $(O_FILES)
+	@echo "    [LD] $(notdir $@)"
+	$(V)$(CC) $(CC_FLAGS) $^ -o $@ $(LNK_FLAGS)
+	@echo "Success."
+
+$(BUILD_DIR)/%.o: %.c
+	$(V)mkdir -p $(dir $@)
+	@echo "    [CC] $(notdir $<)"
+	$(V)$(CC) $(CC_FLAGS) $(INC_FLAGS) -o $@ -c $<
 
 clean:
-	@echo Cleaning up workspace...
-	@rm -rf $(BIN) $(OBJ)
+	@echo Clearing previous build.
+	$(V)rm -rf $(PROG_BIN) $(O_FILES)

@@ -12,254 +12,261 @@
 #include "texture.h"
 #include "window.h"
 
-static GLuint tile_shader;
-static GLuint tile_tex;
-static GLuint tile_bomb_tex;
-static GLuint tile_flagged_tex;
-static GLuint tile_empty_tex[9];
+static GLuint       tile_shader;
+static GLuint       tile_tex;
+static GLuint       tile_bomb_tex;
+static GLuint       tile_flagged_tex;
+static GLuint       tile_empty_tex[9];
 static unsigned int vao, vbo, ebo;
 
-static const int indis[6] = {
-	0, 1, 2,
-	2, 1, 3
-};
+static const int indis[6] = { 0, 1, 2, 2, 1, 3 };
 
 struct tile {
-	bool has_bomb;
-	bool is_flagged;
-	bool is_revealed;
-	float col[3];
+        float    col[3];
+        uint32_t flags;
 };
 
-static bool is_game_lost = 0;
+static bool is_game_lost = false;
 
 static struct tile tiles[TILES_X][TILES_Y];
 
 void tiles_init(void)
 {
-	tile_shader = shader_load("res/vert.glsl", "res/frag.glsl");
+        tile_shader = shader_load("res/vert.glsl", "res/frag.glsl");
 
-	tile_tex = texture_load("res/tile.png");
-	tile_bomb_tex = texture_load("res/tile_bomb.png");
-	tile_flagged_tex = texture_load("res/tile_flagged.png");
+        tile_tex         = texture_load("res/tile.png");
+        tile_bomb_tex    = texture_load("res/tile_bomb.png");
+        tile_flagged_tex = texture_load("res/tile_flagged.png");
 
-	for(int i = 0; i < 9; i++) {
-		char buf[128];
-		sprintf(buf, "res/tile_empty_%d.png", i);
-		tile_empty_tex[i] = texture_load(buf);
-	}
+        for (int i = 0; i < 9; i++) {
+                char buf[128];
+                sprintf(buf, "res/tile_empty_%d.png", i);
+                tile_empty_tex[i] = texture_load(buf);
+        }
 
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
 
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_DYNAMIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE,
-			sizeof(float) * 4, NULL);
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_DYNAMIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0,
+                              4,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              sizeof(float) * 4,
+                              NULL);
 
-	glGenBuffers(1, &ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-			sizeof(indis), indis, GL_STATIC_DRAW);
+        glGenBuffers(1, &ebo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                     sizeof(indis),
+                     indis,
+                     GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
 
-	srand(time(NULL));
+        srand((uint32_t)time(NULL));
 
-	for(int y = 0; y < TILES_Y; y++) {
-		for(int x = 0; x < TILES_X; x++) {
-			struct tile *cur = &tiles[x][y];
-			cur->col[0] = (float)((uint8_t)rand()) / 255.0f;
-			cur->col[1] = (float)((uint8_t)rand()) / 255.0f;
-			cur->col[2] = (float)((uint8_t)rand()) / 255.0f;
-			cur->has_bomb = !(rand() % 8);
-			cur->is_flagged = 0;
-			cur->is_revealed = 0;
-		}
-	}
+        for (uint16_t y = 0; y < TILES_Y; y++) {
+                for (uint16_t x = 0; x < TILES_X; x++) {
+                        static const float r255 = 1.0f / 255.0f;
+                        struct tile *const cur  = &tiles[x][y];
+
+                        for (uint8_t i = 0u; i < 3u; ++i)
+                                cur->col[i] = (float)((uint8_t)rand()) * r255;
+
+                        cur->flags = TILE_FLAGS_NONE;
+                        if (!(rand() & 0x7))
+                                cur->flags |= TILE_FLAG_HAS_BOMB;
+                }
+        }
 }
 
-static int tile_get_surrounding_bombs_count(int tx, int ty)
+static uint32_t tile_get_surrounding_bombs_count(const uint16_t tx,
+                                                 const uint16_t ty)
 {
-	int x_start = max(0, tx - 1);
-	int y_start = max(0, ty - 1);
-	int x_end = min(TILES_X, tx + 2);
-	int y_end = min(TILES_Y, ty + 2);
+        const uint16_t x_start = (uint16_t)max(0, tx - 1);
+        const uint16_t y_start = (uint16_t)max(0, ty - 1);
+        const uint16_t x_end   = (uint16_t)min(TILES_X, tx + 2);
+        const uint16_t y_end   = (uint16_t)min(TILES_Y, ty + 2);
 
-	int num = 0;
+        uint32_t num = 0u;
 
-	for(int y = y_start; y < y_end; y++) {
-		for(int x = x_start; x < x_end; x++) {
-			num += tiles[x][y].has_bomb;
-		}
-	}
+        for (int y = y_start; y < y_end; y++)
+                for (int x = x_start; x < x_end; x++)
+                        num += (tiles[x][y].flags & TILE_FLAG_HAS_BOMB) >>
+                               TILE_FLAG_HAS_BOMB_SHIFT;
 
-	return num;
+        return num;
 }
 
-static void mouse_pos_get_as_tile(int *out, int window_height)
+static void mouse_pos_get_as_tile(int16_t *const o,
+                                  const uint16_t win_wid,
+                                  const uint16_t win_hei)
 {
-	window_mouse_pos_get(out);
-	out[0] /= TILE_SIZE;
-	out[1] = window_height - out[1];
-	out[1] /= TILE_SIZE;
+        window_mouse_pos_get(o);
+        if (o[0] < 0 || o[0] >= win_wid || o[1] < 0 || o[0] >= win_hei)
+                return;
+
+        o[0] /= TILE_SIZE;
+        o[1] = win_hei - (uint16_t)o[1];
+        o[1] /= TILE_SIZE;
 }
 
-static void tile_reveal(int tx, int ty)
+static void tile_reveal(const uint16_t tx, const uint16_t ty)
 {
-	struct tile *t = &tiles[tx][ty];
+        struct tile *const t = &tiles[tx][ty];
+        uint16_t           x_start, y_start, x_end, y_end;
 
-	if(t->is_revealed || t->is_flagged)
-		return;
+        if ((t->flags & TILE_FLAG_IS_REVEALED) ||
+            (t->flags & TILE_FLAG_IS_FLAGGED))
+                return;
 
-	t->is_revealed = 1;
+        t->flags |= TILE_FLAG_IS_REVEALED;
 
-	if(t->has_bomb) {
-		is_game_lost = 1;
+        if (t->flags & TILE_FLAG_HAS_BOMB) {
+                is_game_lost = true;
+                return;
+        }
 
-		return;
-	}
+        if (tile_get_surrounding_bombs_count(tx, ty))
+                return;
 
-	if(tile_get_surrounding_bombs_count(tx, ty))
-		return;
+        x_start = (uint16_t)max(0, tx - 1);
+        y_start = (uint16_t)max(0, ty - 1);
+        x_end   = (uint16_t)min(TILES_X, tx + 2);
+        y_end   = (uint16_t)min(TILES_Y, ty + 2);
 
-	int x_start = max(0, tx - 1);
-	int y_start = max(0, ty - 1);
-	int x_end = min(TILES_X, tx + 2);
-	int y_end = min(TILES_Y, ty + 2);
-
-	for(int y = y_start; y < y_end; y++) {
-		for(int x = x_start; x < x_end; x++) {
-			tile_reveal(x, y);
-		}
-	}
+        for (uint16_t y = y_start; y < y_end; y++)
+                for (uint16_t x = x_start; x < x_end; x++)
+                        tile_reveal(x, y);
 }
 
 static bool is_game_won(void)
 {
-	int num_bombs = 0;
-	int num_unrevealed = 0;
+        uint32_t bomb_cnt   = 0u;
+        uint32_t hidden_cnt = 0u;
 
-	for(int y = 0; y < TILES_Y; y++) {
-		for(int x = 0; x < TILES_X; x++) {
-			struct tile t = tiles[x][y];
-			num_bombs += t.has_bomb;
-			num_unrevealed += !t.is_revealed;
-		}
-	}
+        for (uint16_t y = 0; y < TILES_Y; y++) {
+                for (uint16_t x = 0; x < TILES_X; x++) {
+                        const uint32_t f = tiles[x][y].flags;
 
-	return (num_bombs == num_unrevealed);
+                        bomb_cnt += (f & TILE_FLAG_HAS_BOMB) >>
+                                    TILE_FLAG_HAS_BOMB_SHIFT;
+                        hidden_cnt += !(f & TILE_FLAG_IS_REVEALED);
+                }
+        }
+
+        return (bomb_cnt == hidden_cnt);
 }
 
-void tiles_update(int window_height)
+void tiles_update(const uint16_t win_wid, const uint16_t win_hei)
 {
-	int mouse_pos[2];
+        int16_t mouse[2];
 
-	if(is_game_lost)
-		return;
+        if (is_game_lost)
+                return;
 
-	if(is_game_won()) {
-		printf("YOU'RE WINNER!\n");
-	}
+        if (is_game_won())
+                printf("YOU'RE WINNER!\n");
 
-	mouse_pos_get_as_tile(mouse_pos, window_height);
+        mouse_pos_get_as_tile(mouse, win_wid, win_hei);
 
-	if(window_mouse_down_left()) {
-		tile_reveal(mouse_pos[0], mouse_pos[1]);
-		return;
-	}
+        if (window_lmb_held()) {
+                tile_reveal((uint16_t)mouse[0], (uint16_t)mouse[1]);
+                return;
+        }
 
-	if(window_mouse_down_right()) {
-		struct tile *t = &tiles[mouse_pos[0]][mouse_pos[1]];
-		t->is_flagged = !t->is_flagged;
-		return;
-	}
+        if (window_rmb_held()) {
+                tiles[mouse[0]][mouse[1]].flags ^= TILE_FLAG_IS_FLAGGED;
+                return;
+        }
 }
 
-static void tile_draw(int tx, int ty, int win_width, int win_height)
+static void tile_draw(const uint16_t tx,
+                      const uint16_t ty,
+                      const uint16_t win_width,
+                      const uint16_t win_height)
 {
-	int tile_x = tx * TILE_SIZE;
-	int tile_y = ty * TILE_SIZE;
+        const uint32_t surround_cnt =
+                tile_get_surrounding_bombs_count(tx, ty);
+        const uint16_t           tile_x = tx * TILE_SIZE;
+        const uint16_t           tile_y = ty * TILE_SIZE;
+        const struct tile *const t      = &tiles[tx][ty];
 
-	const float rect[4] = {
-		(float)tile_x / (float)win_width,
-		(float)tile_y / (float)win_height,
-		(float)TILE_SIZE / (float)win_width,
-		(float)TILE_SIZE / (float)win_height,
-	};
+        const float rect[4] = {
+                (float)tile_x / (float)win_width,
+                (float)tile_y / (float)win_height,
+                (float)TILE_SIZE / (float)win_width,
+                (float)TILE_SIZE / (float)win_height,
+        };
 
-	float verts[4][4] = {
-		{rect[0],           rect[1],           0, 1},
-		{rect[0] + rect[2], rect[1],           1, 1},
-		{rect[0],           rect[1] + rect[3], 0, 0},
-		{rect[0] + rect[2], rect[1] + rect[3], 1, 0},
-	};
+        /* FIXME: This is a pretty fucken cringe way to do this. qnq */
+        float verts[4][4] = {
+                {           rect[0],           rect[1], 0, 1 },
+                { rect[0] + rect[2],           rect[1], 1, 1 },
+                {           rect[0], rect[1] + rect[3], 0, 0 },
+                { rect[0] + rect[2], rect[1] + rect[3], 1, 0 },
+        };
 
-	/*
-	 * Normalizing the vertices to OpenGL's coordinate system.
-	 */
-	for(int i = 0; i < 2; i++) {
-		for(int j = 0; j < 4; j++) {
-			float *cur = &verts[j][i];
-			*cur *= 2;
-			*cur -= 1;
-		}
-	}
+        /* Normalizing the vertices to OpenGL's coordinate system. */
+        for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < 4; j++) {
+                        float *const cur = &verts[j][i];
 
-	glBindVertexArray(vao);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts,
-			GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+                        *cur *= 2;
+                        *cur -= 1;
+                }
+        }
 
-	glUseProgram(tile_shader);
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	int num_surrounding = tile_get_surrounding_bombs_count(tx, ty);
+        glUseProgram(tile_shader);
 
-	glBindTexture(GL_TEXTURE_2D, tile_tex);
+        glBindTexture(GL_TEXTURE_2D, tile_tex);
 
-	struct tile t = tiles[tx][ty];
+        if (t->flags & TILE_FLAG_IS_FLAGGED)
+                glBindTexture(GL_TEXTURE_2D, tile_flagged_tex);
 
-	if(t.is_flagged) {
-		glBindTexture(GL_TEXTURE_2D, tile_flagged_tex);
-	}
+        if (t->flags & TILE_FLAG_IS_REVEALED)
+                glBindTexture(GL_TEXTURE_2D, tile_empty_tex[surround_cnt]);
 
-	if(t.is_revealed) {
-		glBindTexture(GL_TEXTURE_2D, tile_empty_tex[num_surrounding]);
-	}
+        if (t->flags & TILE_FLAG_HAS_BOMB) {
+                if (t->flags & TILE_FLAG_IS_REVEALED ||
+                    (is_game_lost && !(t->flags & TILE_FLAG_IS_REVEALED)))
+                        glBindTexture(GL_TEXTURE_2D, tile_bomb_tex);
+        }
 
-	if(t.has_bomb) {
-		if(t.is_revealed || (is_game_lost && !t.is_revealed))
-			glBindTexture(GL_TEXTURE_2D, tile_bomb_tex);
-	}
-
-	glDrawElements(GL_TRIANGLES, sizeof(indis) / sizeof(*indis),
-			GL_UNSIGNED_INT, indis);
-	glBindVertexArray(0);
+        glDrawElements(GL_TRIANGLES,
+                       sizeof(indis) / sizeof(*indis),
+                       GL_UNSIGNED_INT,
+                       indis);
+        glBindVertexArray(0);
 }
 
-void tiles_draw(int win_width, int win_height)
+void tiles_draw(const uint16_t win_wid, const uint16_t win_hei)
 {
-	for(int y = 0; y < TILES_Y; y++) {
-		for(int x = 0; x < TILES_X; x++) {
-			tile_draw(x, y, win_width, win_height);
-		}
-	}
+        for (uint16_t y = 0; y < TILES_Y; y++)
+                for (uint16_t x = 0; x < TILES_X; x++)
+                        tile_draw(x, y, win_wid, win_hei);
 }
 
-void tiles_terminate()
+void tiles_terminate(void)
 {
-	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(1, &vbo);
-	glDeleteBuffers(1, &ebo);
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+        glDeleteBuffers(1, &ebo);
 
-	textures_unload(9, tile_empty_tex);
-	textures_unload(1, &tile_flagged_tex);
-	textures_unload(1, &tile_bomb_tex);
-	textures_unload(1, &tile_tex);
-	shader_unload(tile_shader);
+        textures_unload(9, tile_empty_tex);
+        textures_unload(1, &tile_flagged_tex);
+        textures_unload(1, &tile_bomb_tex);
+        textures_unload(1, &tile_tex);
+        shader_unload(tile_shader);
 }
