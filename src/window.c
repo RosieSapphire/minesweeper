@@ -172,14 +172,8 @@ void window_mouse_pos_get(const struct window *const restrict wnd,
         o[1] = (int16_t)y;
 }
 
-void window_clear(const float r, const float g, const float b, const float a)
+void window_poll(const struct window *const wnd)
 {
-        glClearColor(r, g, b, a);
-        glClear(GL_COLOR_BUFFER_BIT);
-}
-
-void window_display(const struct window *const wnd)
-{
+        (void)wnd;
         glfwPollEvents();
-        glfwSwapBuffers(wnd->handle);
 }
