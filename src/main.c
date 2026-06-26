@@ -16,7 +16,8 @@ static struct window window = {
 };
 
 static struct renderer renderer = {
-        .flags = REND_FLAGS_NONE,
+        .flags  = REND_FLAGS_NONE,
+        .shader = 0u,
 };
 
 static struct input input = {
@@ -27,14 +28,11 @@ int main(void)
 {
         window_init(&window, "Minesweeper", WIN_WIDTH, WIN_HEIGHT);
         renderer_init(&renderer, &window);
+        renderer_load_shader(&renderer, "res/vert.glsl", "res/frag.glsl");
         input = input_init();
         tiles_init();
 
         while (window_running_get(&window)) {
-#if 0
-                static size_t ind = 0ul;
-#endif /* #if 0 */
-
                 input = input_poll(input, &window);
                 tiles_update(&window, input);
 
@@ -44,6 +42,7 @@ int main(void)
         }
 
         tiles_terminate();
+        renderer_unload_shader(&renderer);
         renderer_terminate(&renderer);
         window_terminate(&window);
 

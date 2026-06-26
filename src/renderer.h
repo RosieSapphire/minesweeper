@@ -28,11 +28,17 @@ enum {
 
 struct renderer {
         uint32_t flags;
+        uint32_t shader;
 };
 
 extern void renderer_init(struct renderer *const restrict ren,
                           const struct window *const restrict wnd);
 extern void renderer_terminate(struct renderer *const ren);
+
+extern void renderer_load_shader(struct renderer *const restrict ren,
+                                 const char *const restrict vpath,
+                                 const char *const restrict fpath);
+extern void renderer_unload_shader(struct renderer *const restrict ren);
 
 extern void renderer_clear(const float r,
                            const float g,

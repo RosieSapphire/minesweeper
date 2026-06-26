@@ -1,18 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <time.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "util.h"
-#include "tile.h"
-#include "shader.h"
-#include "texture.h"
-#include "window.h"
+#include "renderer.h"
 
-static GLuint       tile_shader;
+#include "tile.h"
+
 static GLuint       tile_tex;
 static GLuint       tile_bomb_tex;
 static GLuint       tile_flagged_tex;
@@ -32,8 +28,6 @@ static struct tile tiles[TILES_X][TILES_Y];
 
 void tiles_init(void)
 {
-        tile_shader = shader_load("res/vert.glsl", "res/frag.glsl");
-
         tile_tex         = texture_load("res/tile.png");
         tile_bomb_tex    = texture_load("res/tile_bomb.png");
         tile_flagged_tex = texture_load("res/tile_flagged.png");
@@ -227,6 +221,7 @@ static void tile_draw(const struct window *const wnd,
                 }
         }
 
+        /* FIXME: use matrices! */
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_DYNAMIC_DRAW);

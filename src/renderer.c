@@ -1,6 +1,9 @@
+#include <stdlib.h>
+
 #include <glad/glad.h>
 
 #include "error.h"
+#include "file_ops.h"
 
 #include "renderer.h"
 
@@ -34,7 +37,91 @@ void renderer_terminate(struct renderer *const ren)
         assertf(ren->flags & REND_FLAG_IS_INIT,
                 "Render was never initialized.");
 
+        if (ren->shader)
+                renderer_unload_shader(ren);
+
+        ren->shader = 0u;
         ren->flags &= ~REND_FLAG_IS_INIT;
+}
+
+static uint32_t shader_part_compile(const char *const path,
+                                    const uint32_t    type)
+{
+        FILE    *fp;
+        char    *buf;
+        size_t   sz;
+        uint32_t s;
+        int      stat;
+
+        fp = fopen_check(path, "rb");
+        fseek_check(fp, 0, SEEK_END);
+        sz = ftell_check(fp);
+        rewind(fp);
+
+        buf = (char *)malloc(sz);
+        fread(buf, sizeof(char), sz, fp);
+        buf[sz - 1ul] = '\0';
+        fclose_check(fp);
+
+        s = glCreateShader(type);
+        glShaderSource(s, 1, (const char *const *const)&buf, NULL);
+        glCompileShader(s);
+
+        glGetShaderiv(s, GL_COMPILE_STATUS, &stat);
+        if (!stat) {
+                char log[512];
+
+                glGetShaderInfoLog(s, 512, NULL, log);
+                printf("Failed to create %s Shader: '%s'\n",
+                       (type == GL_VERTEX_SHADER) ? "Vertex" : "Fragment",
+                       log);
+
+                return 0;
+        }
+
+        free(buf);
+
+        return s;
+}
+
+void renderer_load_shader(struct renderer *const restrict ren,
+                          const char *const restrict vpath,
+                          const char *const restrict fpath)
+{
+        uint32_t p, v, f;
+        int      stat;
+
+        assertf(ren, "Renderer is NULL.");
+        assertf(vpath, "Vertex shader path is NULL.");
+        assertf(fpath, "Fragment shader path is NULL.");
+
+        p = glCreateProgram();
+        v = shader_part_compile(vpath, GL_VERTEX_SHADER);
+        f = shader_part_compile(fpath, GL_FRAGMENT_SHADER);
+
+        glAttachShader(p, v);
+        glAttachShader(p, f);
+        glLinkProgram(p);
+
+        glGetProgramiv(p, GL_LINK_STATUS, &stat);
+
+        if (!stat) {
+                char log[512];
+
+                glGetProgramInfoLog(p, 512, NULL, log);
+                fprintf(stderr, "ERROR::SHADER::PROGRAM: %s\n", log);
+                exit(EXIT_FAILURE);
+        }
+
+        glDeleteShader(f);
+        glDeleteShader(v);
+
+        ren->shader = p;
+}
+
+void renderer_unload_shader(struct renderer *const restrict ren)
+{
+        glDeleteProgram(ren->shader);
 }
 
 void renderer_clear(const float r,
