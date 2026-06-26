@@ -104,16 +104,16 @@ static uint32_t tile_get_surrounding_bombs_count(const uint16_t tx,
         return num;
 }
 
-static void mouse_pos_get_as_tile(int16_t *const o,
-                                  const uint16_t win_wid,
-                                  const uint16_t win_hei)
+static void mouse_pos_get_as_tile(const struct window *const restrict wnd,
+                                  int16_t *const restrict o)
 {
-        window_mouse_pos_get(o);
-        if (o[0] < 0 || o[0] >= win_wid || o[1] < 0 || o[0] >= win_hei)
+        window_mouse_pos_get(wnd, o);
+        if (o[0] < 0 || (uint32_t)o[0] >= wnd->width || o[1] < 0 ||
+            (uint32_t)o[0] >= wnd->height)
                 return;
 
         o[0] /= TILE_SIZE;
-        o[1] = win_hei - (uint16_t)o[1];
+        o[1] = (int16_t)wnd->height - o[1];
         o[1] /= TILE_SIZE;
 }
 
@@ -164,7 +164,7 @@ static bool is_game_won(void)
         return (bomb_cnt == hidden_cnt);
 }
 
-void tiles_update(const uint16_t win_wid, const uint16_t win_hei)
+void tiles_update(const struct window *const wnd)
 {
         int16_t mouse[2];
 
@@ -174,23 +174,22 @@ void tiles_update(const uint16_t win_wid, const uint16_t win_hei)
         if (is_game_won())
                 printf("YOU'RE WINNER!\n");
 
-        mouse_pos_get_as_tile(mouse, win_wid, win_hei);
+        mouse_pos_get_as_tile(wnd, mouse);
 
-        if (window_lmb_held()) {
+        if (window_lmb_held(wnd)) {
                 tile_reveal((uint16_t)mouse[0], (uint16_t)mouse[1]);
                 return;
         }
 
-        if (window_rmb_held()) {
+        if (window_rmb_held(wnd)) {
                 tiles[mouse[0]][mouse[1]].flags ^= TILE_FLAG_IS_FLAGGED;
                 return;
         }
 }
 
-static void tile_draw(const uint16_t tx,
-                      const uint16_t ty,
-                      const uint16_t win_width,
-                      const uint16_t win_height)
+static void tile_draw(const struct window *const wnd,
+                      const uint16_t             tx,
+                      const uint16_t             ty)
 {
         const uint32_t surround_cnt =
                 tile_get_surrounding_bombs_count(tx, ty);
@@ -199,10 +198,10 @@ static void tile_draw(const uint16_t tx,
         const struct tile *const t      = &tiles[tx][ty];
 
         const float rect[4] = {
-                (float)tile_x / (float)win_width,
-                (float)tile_y / (float)win_height,
-                (float)TILE_SIZE / (float)win_width,
-                (float)TILE_SIZE / (float)win_height,
+                (float)tile_x / (float)wnd->width,
+                (float)tile_y / (float)wnd->height,
+                (float)TILE_SIZE / (float)wnd->width,
+                (float)TILE_SIZE / (float)wnd->height,
         };
 
         /* FIXME: This is a pretty fucken cringe way to do this. qnq */
@@ -251,11 +250,11 @@ static void tile_draw(const uint16_t tx,
         glBindVertexArray(0);
 }
 
-void tiles_draw(const uint16_t win_wid, const uint16_t win_hei)
+void tiles_draw(const struct window *const wnd)
 {
         for (uint16_t y = 0; y < TILES_Y; y++)
                 for (uint16_t x = 0; x < TILES_X; x++)
-                        tile_draw(x, y, win_wid, win_hei);
+                        tile_draw(wnd, x, y);
 }
 
 void tiles_terminate(void)

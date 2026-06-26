@@ -5,8 +5,7 @@
  * INCLUDES *
  ************/
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "window.h"
 
 /***********
  * DEFINES *
@@ -36,8 +35,8 @@ enum {
  ******************************/
 
 extern void tiles_init(void);
-extern void tiles_update(const uint16_t win_wid, const uint16_t win_hei);
-extern void tiles_draw(const uint16_t win_wid, const uint16_t win_hei);
+extern void tiles_update(const struct window *const wnd);
+extern void tiles_draw(const struct window *const wnd);
 extern void tiles_terminate(void);
 
 #endif

@@ -1,5 +1,5 @@
+#ifdef DEBUG
 
-#ifndef NDEBUG
         #include <assert.h>
         #include <stdio.h>
         #include <stdlib.h>
@@ -36,4 +36,4 @@ void _assertf_internal(const bool cond,
 
         #pragma clang diagnostic pop
 
-#endif /* #ifndef NDEBUG */
+#endif /* #ifdef DEBUG */

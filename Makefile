@@ -13,7 +13,6 @@ WARN_INC   := all \
 WARN_EXC   := reserved-identifier \
 	      reserved-macro-identifier \
 	      unsafe-buffer-usage
-WARN_FLAGS := $(WARN_INC:%=-W%) $(WARN_EXC:%=-Wno-%)
 STD_FLAGS  := -std=c99 -pedantic
 
 CC := clang-20
@@ -30,17 +29,20 @@ ifdef DEBUG
 	endif
 	OPT_FLAGS  := -Og
 	DBG_FLAGS  := -ggdb3 -DDEBUG
-	LNK_FLAGS += -L$(GLFW_DIR) -l:libglfw3_d.a \
-		     -L$(GLAD_DIR) -l:libglad_d.a \
-		     -L$(STB_DIR) -l:libstb_image_d.a
+	LNK_FLAGS  += -L$(GLFW_DIR) -l:libglfw3_d.a \
+		      -L$(GLAD_DIR) -l:libglad_d.a \
+		      -L$(STB_DIR) -l:libstb_image_d.a
 else
 	ASAN_FLAGS :=
 	OPT_FLAGS  := -O3 -ffast-math -g0
 	DBG_FLAGS  := -g0 -DNDEBUG
-	LNK_FLAGS += -L$(GLFW_DIR) -l:libglfw3.a \
-		     -L$(GLAD_DIR) -l:libglad.a \
-		     -L$(STB_DIR) -l:libstb_image.a
+	LNK_FLAGS  += -L$(GLFW_DIR) -l:libglfw3.a \
+		      -L$(GLAD_DIR) -l:libglad.a \
+		      -L$(STB_DIR) -l:libstb_image.a
+	WARN_EXC   += empty-translation-unit
 endif
+
+WARN_FLAGS := $(WARN_INC:%=-W%) $(WARN_EXC:%=-Wno-%)
 
 CC_FLAGS  := -fdiagnostics-color=never \
 	     $(WARN_FLAGS) \
