@@ -1,12 +1,14 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
 
-#include "error.h"
+#ifndef NDEBUG
+        #include <assert.h>
+        #include <stdio.h>
+        #include <stdlib.h>
+        #include <stdarg.h>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wformat-nonliteral"
+        #include "error.h"
+
+        #pragma clang diagnostic push
+        #pragma clang diagnostic ignored "-Wformat-nonliteral"
 
 void _assertf_internal(const bool cond,
                        const char *const __restrict cond_str,
@@ -32,4 +34,6 @@ void _assertf_internal(const bool cond,
         exit(EXIT_FAILURE);
 }
 
-#pragma clang diagnostic pop
+        #pragma clang diagnostic pop
+
+#endif /* #ifndef NDEBUG */

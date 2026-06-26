@@ -11,7 +11,12 @@
  * MACROS *
  **********/
 
-#define assertf(_cond, ...) _assertf_internal(!!(_cond), #_cond, __VA_ARGS__)
+#ifndef NDEBUG
+        #define assertf(_cond, ...) \
+                _assertf_internal(!!(_cond), #_cond, __VA_ARGS__)
+#else /* #ifndef NDEBUG */
+        #define assertf(_cond, ...) ((void)0)
+#endif /* #ifndef NDEBUG #else */
 
 /******************************
  * PUBLIC FUNCTION PROTOTYPES *
