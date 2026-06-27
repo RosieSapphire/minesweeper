@@ -229,6 +229,14 @@ static bool game_check_won(void)
         return (bomb_cnt == hidden_cnt);
 }
 
+static inline void tiles_remaining_flag(void)
+{
+        for (uint16_t y = 0; y < TILES_Y; y++)
+                for (uint16_t x = 0; x < TILES_X; x++)
+                        if (!(tiles[x][y].flags & TILE_FLAG_IS_REVEALED))
+                                tiles[x][y].flags |= TILE_FLAG_IS_FLAGGED;
+}
+
 void tiles_update(const struct window *const wnd, const struct input inp)
 {
 #define PRINT_NONE (0u)
@@ -265,8 +273,10 @@ void tiles_update(const struct window *const wnd, const struct input inp)
 
         if (inp.flags & INPUT_LMB_PRESS) {
                 tile_reveal((uint16_t)mouse[0], (uint16_t)mouse[1]);
-                if (game_check_won())
+                if (game_check_won()) {
+                        tiles_remaining_flag();
                         game_state = GS_WON;
+                }
 
                 return;
         }
