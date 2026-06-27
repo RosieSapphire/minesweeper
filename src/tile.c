@@ -12,6 +12,12 @@
 
 #include "tile.h"
 
+enum game_state {
+        GS_PLAYING = 0,
+        GS_WON,
+        GS_LOST,
+};
+
 struct quad {
         uint32_t *idx_arr;
         uint32_t  idx_cnt;
@@ -39,7 +45,7 @@ struct tile {
         uint32_t flags;
 };
 
-static bool is_game_lost = false;
+static enum game_state game_state = GS_PLAYING;
 
 static struct tile tiles[TILES_X][TILES_Y];
 
@@ -113,6 +119,26 @@ static void tiles_quad_gen(struct quad *const restrict quad,
         (void)memcpy(quad->idx_arr, idx_arr, idx_cnt * sizeof(*idx_arr));
 }
 
+static void tiles_reset_board(void)
+{
+        game_state = GS_PLAYING;
+        for (uint16_t y = 0; y < TILES_Y; y++) {
+                for (uint16_t x = 0; x < TILES_X; x++) {
+                        static const float r255 = 1.0f / 255.0f;
+                        /* FIXME: Make this a linear array! */
+                        struct tile *const cur  = &tiles[x][y];
+
+                        /* FIXME: What the fuck does this even do?! */
+                        for (uint8_t i = 0u; i < 3u; ++i)
+                                cur->col[i] = (float)((uint8_t)rand()) * r255;
+
+                        cur->flags = TILE_FLAGS_NONE;
+                        if (!(rand() & 63u))
+                                cur->flags |= TILE_FLAG_HAS_BOMB;
+                }
+        }
+}
+
 void tiles_init(void)
 {
         tiles_textures_load();
@@ -122,20 +148,7 @@ void tiles_init(void)
 
         srand((uint32_t)time(NULL));
 
-        for (uint16_t y = 0; y < TILES_Y; y++) {
-                for (uint16_t x = 0; x < TILES_X; x++) {
-                        static const float r255 = 1.0f / 255.0f;
-                        struct tile *const cur  = &tiles[x][y];
-
-                        /* FIXME: What the fuck does this even do?! */
-                        for (uint8_t i = 0u; i < 3u; ++i)
-                                cur->col[i] = (float)((uint8_t)rand()) * r255;
-
-                        cur->flags = TILE_FLAGS_NONE;
-                        if (!(rand() & 0x7))
-                                cur->flags |= TILE_FLAG_HAS_BOMB;
-                }
-        }
+        tiles_reset_board();
 }
 
 static uint32_t tile_get_surrounding_bombs_count(const uint16_t tx,
@@ -181,7 +194,7 @@ static void tile_reveal(const uint16_t tx, const uint16_t ty)
         t->flags |= TILE_FLAG_IS_REVEALED;
 
         if (t->flags & TILE_FLAG_HAS_BOMB) {
-                is_game_lost = true;
+                game_state = GS_LOST;
                 return;
         }
 
@@ -198,7 +211,7 @@ static void tile_reveal(const uint16_t tx, const uint16_t ty)
                         tile_reveal(x, y);
 }
 
-static bool is_game_won(void)
+static bool game_check_won(void)
 {
         uint32_t bomb_cnt   = 0u;
         uint32_t hidden_cnt = 0u;
@@ -218,16 +231,33 @@ static bool is_game_won(void)
 
 void tiles_update(const struct window *const wnd, const struct input inp)
 {
-        static bool printed_message = false;
+#define PRINT_NONE (0u)
+#define PRINT_WON  (1u << 0u)
+#define PRINT_LOST (1u << 1u)
+
+        static uint8_t printed = PRINT_NONE;
 
         int16_t mouse[2];
 
-        if (is_game_lost)
+        if (inp.flags & INPUT_R_PRESS) {
+                printed = PRINT_NONE;
+                tiles_reset_board();
                 return;
+        }
 
-        if (is_game_won() && !printed_message) {
-                printf("YOU'RE WINNER!\n");
-                printed_message = true;
+        if (game_state == GS_LOST) {
+                if (printed & PRINT_LOST)
+                        return;
+
+                printf("YOU LOST! Press 'R' to try again.\n");
+                printed |= PRINT_LOST;
+                return;
+        } else if (game_state == GS_WON) {
+                if (printed & PRINT_WON)
+                        return;
+
+                printf("YOU'RE WINNER! Press 'R' to play again! :D\n");
+                printed |= PRINT_WON;
                 return;
         }
 
@@ -235,6 +265,9 @@ void tiles_update(const struct window *const wnd, const struct input inp)
 
         if (inp.flags & INPUT_LMB_PRESS) {
                 tile_reveal((uint16_t)mouse[0], (uint16_t)mouse[1]);
+                if (game_check_won())
+                        game_state = GS_WON;
+
                 return;
         }
 
@@ -242,6 +275,10 @@ void tiles_update(const struct window *const wnd, const struct input inp)
                 tiles[mouse[0]][mouse[1]].flags ^= TILE_FLAG_IS_FLAGGED;
                 return;
         }
+
+#undef PRINT_LOST
+#undef PRINT_WON
+#undef PRINT_NONE
 }
 
 static void tile_draw(const uint32_t shd,
@@ -299,7 +336,8 @@ static void tile_draw(const uint32_t shd,
 
         if (t->flags & TILE_FLAG_HAS_BOMB) {
                 if (t->flags & TILE_FLAG_IS_REVEALED ||
-                    (is_game_lost && !(t->flags & TILE_FLAG_IS_REVEALED)))
+                    (game_state == GS_LOST &&
+                     !(t->flags & TILE_FLAG_IS_REVEALED)))
                         glBindTexture(GL_TEXTURE_2D, tile_bomb_tex);
         }
 
