@@ -383,8 +383,9 @@ void tiles_draw(const uint32_t shd,
                 const uint32_t wnd_wid,
                 const uint32_t wnd_hei)
 {
-        for (uint16_t i = 0u; i < TILES_X * TILES_Y; i++)
-                tile_draw(shd, wnd_wid, wnd_hei, x, y);
+        for (uint16_t y = 0u; y < TILES_Y; y++)
+                for (uint16_t x = 0u; x < TILES_X; x++)
+                        tile_draw(shd, wnd_wid, wnd_hei, x, y);
 }
 
 static void tiles_terminate_quad(struct quad *const q)
