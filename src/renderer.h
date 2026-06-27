@@ -27,26 +27,20 @@ enum {
  **************/
 
 struct renderer {
-        uint32_t *tex_arr;
-        uint32_t  tex_cnt;
-        uint32_t  flags;
-        uint32_t  shader;
-        uint32_t  _pad;
+        float    clear_col[4];
+        uint32_t flags;
 };
 
 extern void renderer_init(struct renderer *const restrict ren,
                           const struct window *const restrict wnd);
 extern void renderer_terminate(struct renderer *const ren);
 
-extern void renderer_shader_load(struct renderer *const restrict ren,
-                                 const char *const restrict vpath,
-                                 const char *const restrict fpath);
-extern void renderer_shader_unload(struct renderer *const restrict ren);
+extern uint32_t shader_load(const char *const restrict vpath,
+                            const char *const restrict fpath);
+extern void     shader_unload(uint32_t *const id);
 
-extern uint32_t renderer_texture_load(struct renderer *const restrict ren,
-                                      const char *const restrict path);
-extern void     renderer_texture_unload(struct renderer *const restrict ren,
-                                        const uint32_t id);
+extern uint32_t texture_load(const char *const path);
+extern void     texture_unload(uint32_t *const id);
 
 extern void renderer_clear(const float r,
                            const float g,

@@ -10,6 +10,7 @@
         #pragma clang diagnostic push
         #pragma clang diagnostic ignored "-Wformat-nonliteral"
 
+/* TODO: Add function name here. */
 void _assertf_internal(const bool cond,
                        const char *const __restrict cond_str,
                        const char *const __restrict fmt,

@@ -1,5 +1,5 @@
-#ifndef TILE_H
-#define TILE_H
+#ifndef __TILE_H
+#define __TILE_H
 
 /************
  * INCLUDES *
@@ -7,7 +7,6 @@
 
 #include "window.h"
 #include "input.h"
-#include "renderer.h"
 
 /***********
  * DEFINES *
@@ -36,11 +35,12 @@ enum {
  * PUBLIC FUNCTION PROTOTYPES *
  ******************************/
 
-extern void tiles_init(struct renderer *const rnd);
+extern void tiles_init(void);
 extern void tiles_update(const struct window *const wnd,
                          const struct input         inp);
-extern void tiles_draw(const struct renderer *const restrict rnd,
-                       const struct window *const restrict wnd);
-extern void tiles_terminate(struct renderer *const rnd);
+extern void tiles_draw(const uint32_t shd,
+                       const uint32_t wnd_wid,
+                       const uint32_t wnd_hei);
+extern void tiles_terminate(void);
 
-#endif
+#endif /* #ifndef __TILE_H */

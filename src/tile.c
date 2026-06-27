@@ -12,8 +12,7 @@
 
 #include "tile.h"
 
-/* TODO: Move somewhere else maybe? */
-struct model {
+struct quad {
         uint32_t *idx_arr;
         uint32_t  idx_cnt;
         uint32_t  vao;
@@ -24,8 +23,16 @@ struct model {
 static uint32_t tile_tex          = 0u;
 static uint32_t tile_bomb_tex     = 0u;
 static uint32_t tile_flagged_tex  = 0u;
-static uint32_t tile_empty_tex[9] = { 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
-static struct model tile_model    = { .vao = 0u, .vbo = 0u, .ebo = 0u };
+static uint32_t tile_empty_tex[9] = {
+        0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+};
+static struct quad tile_quad = {
+        .idx_arr = NULL,
+        .idx_cnt = 0u,
+        .vao     = 0u,
+        .vbo     = 0u,
+        .ebo     = 0u,
+};
 
 struct tile {
         float    col[3];
@@ -36,44 +43,44 @@ static bool is_game_lost = false;
 
 static struct tile tiles[TILES_X][TILES_Y];
 
-static void tiles_load_textures(struct renderer *const rnd)
+static void tiles_textures_load(void)
 {
-        tile_tex         = renderer_texture_load(rnd, "res/tile.png");
-        tile_bomb_tex    = renderer_texture_load(rnd, "res/tile_bomb.png");
-        tile_flagged_tex = renderer_texture_load(rnd, "res/tile_flagged.png");
+        tile_tex         = texture_load("res/tile.png");
+        tile_bomb_tex    = texture_load("res/tile_bomb.png");
+        tile_flagged_tex = texture_load("res/tile_flagged.png");
 
         for (uint8_t i = 0; i < 9u; i++) {
                 char buf[128];
                 sprintf(buf, "res/tile_empty_%u.png", i);
-                tile_empty_tex[i] = renderer_texture_load(rnd, buf);
+                tile_empty_tex[i] = texture_load(buf);
         }
 }
 
-static void tiles_build_model(struct model *const restrict mdl,
-                              const uint32_t *const restrict idx_arr,
-                              const uint32_t idx_cnt)
+static void tiles_quad_gen(struct quad *const restrict quad,
+                           const uint32_t *const restrict idx_arr,
+                           const uint32_t idx_cnt)
 {
         /* Ensure sane input. */
-        assertf(mdl, "Model pointer is NULL.");
-        assertf(!mdl->idx_arr,
+        assertf(quad, "Model pointer is NULL.");
+        assertf(!quad->idx_arr,
                 "Index Array already allocated: <%p>.",
-                mdl->idx_arr);
-        assertf(!mdl->idx_cnt, "Index Count is already %lu.", mdl->idx_cnt);
-        assertf(!mdl->vao, "VAO already initialized: %u.", mdl->vao);
-        assertf(!mdl->vbo, "VBO already initialized: %u.", mdl->vbo);
-        assertf(!mdl->ebo, "EBO already initialized: %u.", mdl->ebo);
+                quad->idx_arr);
+        assertf(!quad->idx_cnt, "Index Count is already %lu.", quad->idx_cnt);
+        assertf(!quad->vao, "VAO already initialized: %u.", quad->vao);
+        assertf(!quad->vbo, "VBO already initialized: %u.", quad->vbo);
+        assertf(!quad->ebo, "EBO already initialized: %u.", quad->ebo);
 
         assertf(idx_arr, "Input index array is NULL.");
         assertf(idx_cnt, "Input index count is 0.");
 
         /* Allocate buffers. */
-        glGenVertexArrays(1, &mdl->vao);
-        assertf(mdl->vao, "Failed to generate VAO.");
-        glBindVertexArray(mdl->vao);
+        glGenVertexArrays(1, &quad->vao);
+        assertf(quad->vao, "Failed to generate VAO.");
+        glBindVertexArray(quad->vao);
 
-        glGenBuffers(1, &mdl->vbo);
-        assertf(mdl->vbo, "Failed to generate VBO.");
-        glBindBuffer(GL_ARRAY_BUFFER, mdl->vbo);
+        glGenBuffers(1, &quad->vbo);
+        assertf(quad->vbo, "Failed to generate VBO.");
+        glBindBuffer(GL_ARRAY_BUFFER, quad->vbo);
         glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_DYNAMIC_DRAW);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0,
@@ -83,9 +90,9 @@ static void tiles_build_model(struct model *const restrict mdl,
                               sizeof(float) * 4,
                               NULL);
 
-        glGenBuffers(1, &mdl->ebo);
-        assertf(mdl->ebo, "Failed to generate EBO.");
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mdl->ebo);
+        glGenBuffers(1, &quad->ebo);
+        assertf(quad->ebo, "Failed to generate EBO.");
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quad->ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                      sizeof(*idx_arr) * idx_cnt,
                      idx_arr,
@@ -96,22 +103,22 @@ static void tiles_build_model(struct model *const restrict mdl,
         glBindVertexArray(0);
 
         /* Store the index buffer. */
-        mdl->idx_cnt = idx_cnt;
-        mdl->idx_arr = (uint32_t *)malloc(sizeof(*idx_arr) * idx_cnt);
-        assertf(mdl->idx_arr,
+        quad->idx_cnt = idx_cnt;
+        quad->idx_arr = (uint32_t *)malloc(sizeof(*idx_arr) * idx_cnt);
+        assertf(quad->idx_arr,
                 "Failed to allocate stored index "
                 "array of count %lu and size %lu.",
                 idx_cnt,
                 idx_cnt * sizeof(*idx_arr));
-        (void)memcpy(mdl->idx_arr, idx_arr, idx_cnt * sizeof(*idx_arr));
+        (void)memcpy(quad->idx_arr, idx_arr, idx_cnt * sizeof(*idx_arr));
 }
 
-void tiles_init(struct renderer *const rnd)
+void tiles_init(void)
 {
-        tiles_load_textures(rnd);
-        tiles_build_model(&tile_model,
-                          (const uint32_t[6u]) { 0u, 1u, 2u, 2u, 1u, 3u },
-                          6u);
+        tiles_textures_load();
+        tiles_quad_gen(&tile_quad,
+                       (const uint32_t[6u]) { 0u, 1u, 2u, 2u, 1u, 3u },
+                       6u);
 
         srand((uint32_t)time(NULL));
 
@@ -237,8 +244,9 @@ void tiles_update(const struct window *const wnd, const struct input inp)
         }
 }
 
-static void tile_draw(const struct renderer *const restrict rnd,
-                      const struct window *const restrict wnd,
+static void tile_draw(const uint32_t shd,
+                      const uint32_t wnd_wid,
+                      const uint32_t wnd_hei,
                       const uint16_t tx,
                       const uint16_t ty)
 {
@@ -249,10 +257,10 @@ static void tile_draw(const struct renderer *const restrict rnd,
         const struct tile *const t      = &tiles[tx][ty];
 
         const float rect[4] = {
-                (float)tile_x / (float)wnd->width,
-                (float)tile_y / (float)wnd->height,
-                (float)TILE_SIZE / (float)wnd->width,
-                (float)TILE_SIZE / (float)wnd->height,
+                (float)tile_x / (float)wnd_wid,
+                (float)tile_y / (float)wnd_hei,
+                (float)TILE_SIZE / (float)wnd_wid,
+                (float)TILE_SIZE / (float)wnd_hei,
         };
 
         /* FIXME: This is a pretty fucken cringe way to do this. qnq */
@@ -274,12 +282,12 @@ static void tile_draw(const struct renderer *const restrict rnd,
         }
 
         /* FIXME: use matrices! */
-        glBindVertexArray(tile_model.vao);
-        glBindBuffer(GL_ARRAY_BUFFER, tile_model.vbo);
+        glBindVertexArray(tile_quad.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, tile_quad.vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-        glUseProgram(rnd->shader);
+        glUseProgram(shd);
 
         glBindTexture(GL_TEXTURE_2D, tile_tex);
 
@@ -296,41 +304,42 @@ static void tile_draw(const struct renderer *const restrict rnd,
         }
 
         glDrawElements(GL_TRIANGLES,
-                       (GLsizei)tile_model.idx_cnt,
+                       (GLsizei)tile_quad.idx_cnt,
                        GL_UNSIGNED_INT,
-                       tile_model.idx_arr);
+                       tile_quad.idx_arr);
         glBindVertexArray(0);
 }
 
-void tiles_draw(const struct renderer *const restrict rnd,
-                const struct window *const restrict wnd)
+void tiles_draw(const uint32_t shd,
+                const uint32_t wnd_wid,
+                const uint32_t wnd_hei)
 {
         for (uint16_t y = 0; y < TILES_Y; y++)
                 for (uint16_t x = 0; x < TILES_X; x++)
-                        tile_draw(rnd, wnd, x, y);
+                        tile_draw(shd, wnd_wid, wnd_hei, x, y);
 }
 
-void tiles_terminate(struct renderer *const rnd)
+static void tiles_terminate_quad(struct quad *const q)
 {
-        glDeleteBuffers(1, &tile_model.ebo);
-        tile_model.ebo = 0u;
-        glDeleteBuffers(1, &tile_model.vbo);
-        tile_model.vbo = 0u;
-        glDeleteVertexArrays(1, &tile_model.vao);
-        tile_model.vao     = 0u;
-        tile_model.idx_cnt = 0u;
-        free(tile_model.idx_arr);
-        tile_model.idx_arr = NULL;
+        glDeleteBuffers(1, &q->ebo);
+        q->ebo = 0u;
+        glDeleteBuffers(1, &q->vbo);
+        q->vbo = 0u;
+        glDeleteVertexArrays(1, &q->vao);
+        q->vao     = 0u;
+        q->idx_cnt = 0u;
+        free(q->idx_arr);
+        q->idx_arr = NULL;
+}
 
-        for (uint8_t i = 0u; i < 9u; ++i) {
-                renderer_texture_unload(rnd, tile_empty_tex[i]);
-                tile_empty_tex[i] = 0u;
-        }
+void tiles_terminate(void)
+{
+        tiles_terminate_quad(&tile_quad);
 
-        renderer_texture_unload(rnd, tile_flagged_tex);
-        tile_flagged_tex = 0u;
-        renderer_texture_unload(rnd, tile_bomb_tex);
-        tile_bomb_tex = 0u;
-        renderer_texture_unload(rnd, tile_tex);
-        tile_tex = 0u;
+        for (uint8_t i = 0u; i < 9u; ++i)
+                texture_unload(&tile_empty_tex[i]);
+
+        texture_unload(&tile_flagged_tex);
+        texture_unload(&tile_bomb_tex);
+        texture_unload(&tile_tex);
 }

@@ -15,24 +15,6 @@
 
 #include "window.h"
 
-static void window_key_callback(GLFWwindow *const w,
-                                int               k,
-                                int               sc,
-                                int               a,
-                                int               m)
-{
-        (void)sc;
-        (void)m;
-
-        if (a != GLFW_PRESS)
-                return;
-
-        if (k != GLFW_KEY_ESCAPE)
-                return;
-
-        glfwSetWindowShouldClose(w, true);
-}
-
 static void __attribute__((noreturn)) glfw_err_cbfn(const int         c,
                                                     const char *const msg)
 {
@@ -87,7 +69,6 @@ void window_init(struct window *const restrict wnd,
         wnd->height = height;
 
         glfwMakeContextCurrent(wnd->handle);
-        glfwSetKeyCallback(wnd->handle, window_key_callback);
 }
 
 void window_running_set(struct window *const wnd, const bool t)

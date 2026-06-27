@@ -45,11 +45,9 @@ void renderer_terminate(struct renderer *const ren)
         assertf(ren->flags & REND_FLAG_IS_INIT,
                 "Render was never initialized.");
 
-        if (ren->shader)
-                renderer_shader_unload(ren);
-
-        ren->shader = 0u;
         ren->flags &= ~REND_FLAG_IS_INIT;
+        for (uint8_t i = 0u; i < 4u; ++i)
+                ren->clear_col[i] = 0.0f;
 }
 
 static uint32_t shader_part_compile(const char *const path,
@@ -92,14 +90,12 @@ static uint32_t shader_part_compile(const char *const path,
         return s;
 }
 
-void renderer_shader_load(struct renderer *const restrict ren,
-                          const char *const restrict vpath,
-                          const char *const restrict fpath)
+uint32_t shader_load(const char *const restrict vpath,
+                     const char *const restrict fpath)
 {
         uint32_t p, v, f;
         int      stat;
 
-        assertf(ren, "Renderer is NULL.");
         assertf(vpath, "Vertex shader path is NULL.");
         assertf(fpath, "Fragment shader path is NULL.");
 
@@ -124,27 +120,25 @@ void renderer_shader_load(struct renderer *const restrict ren,
         glDeleteShader(f);
         glDeleteShader(v);
 
-        ren->shader = p;
+        return p;
 }
 
-void renderer_shader_unload(struct renderer *const restrict ren)
+void shader_unload(uint32_t *const id)
 {
-        assertf(ren, "Renderer is NULL.");
-        assertf(ren->shader, "Renderer's shader is 0.");
-        glDeleteProgram(ren->shader);
+        assertf(id, "Trying to free a NULL Shader ID pointer.");
+        assertf(*id, "Shader ID was already freed OR never allocated.");
+        glDeleteProgram(*id);
+        *id = 0u;
 }
 
-uint32_t renderer_texture_load(struct renderer *const restrict ren,
-                               const char *const restrict path)
+uint32_t texture_load(const char *const path)
 {
         uint8_t *buf;
         uint32_t id;
         int      w, h, c;
 
-        assertf(ren, "Renderer is NULL.");
         assertf(path, "Texture path is NULL.");
 
-        /* Load the texture itself. */
         buf = stbi_load(path, &w, &h, &c, 3);
         assertf(buf, "Failed to load texture from \"%s\".\n", path);
 
@@ -170,77 +164,15 @@ uint32_t renderer_texture_load(struct renderer *const restrict ren,
         glBindTexture(GL_TEXTURE_2D, 0);
         stbi_image_free(buf);
 
-        /* Now add it to the array. */
-        if (!ren->tex_cnt) {
-                assertf(!ren->tex_arr,
-                        "Texture count is 0, but array is <%p>; non-null.",
-                        ren->tex_arr);
-                ren->tex_arr = (uint32_t *)malloc(sizeof(*ren->tex_arr) *
-                                                  ++ren->tex_cnt);
-                assertf(ren->tex_arr,
-                        "Failed to allocate texture array for \"%s\".",
-                        path);
-        } else {
-                uint32_t *arr_new;
-
-                assertf(ren->tex_arr,
-                        "Texture count is %lu, but array is NULL.",
-                        ren->tex_cnt);
-                arr_new = (uint32_t *)realloc(ren->tex_arr,
-                                              sizeof(*ren->tex_arr) *
-                                                      ++ren->tex_cnt);
-                assertf(arr_new,
-                        "Failed to reallocate texture array for \"%s\" for count %lu.",
-                        path,
-                        ren->tex_cnt);
-                ren->tex_arr = arr_new;
-        }
-
-        ren->tex_arr[ren->tex_cnt - 1u] = id;
-
         return id;
 }
 
-static uint32_t renderer_texture_get_index(const struct renderer *const rnd,
-                                           const uint32_t               id)
+void texture_unload(uint32_t *const id)
 {
-        uint32_t  cnt;
-        uint32_t *arr;
-
-        assertf(rnd, "Renderer is NULL.");
-        assertf(rnd->tex_cnt && rnd->tex_arr,
-                "Renderer has no textures to find [cnt=%lu arr=<%p>].\n",
-                rnd->tex_cnt,
-                rnd->tex_arr);
-        assertf(id, "Not allowed to use Tex ID of 0; invalid ID value.");
-
-        cnt = rnd->tex_cnt;
-        arr = rnd->tex_arr;
-        for (uint32_t i = 0u; i < cnt; ++i)
-                if (id == arr[i])
-                        return i;
-
-        assertf(0,
-                "Failed to find texture id %lu "
-                "in array <%p> of %lu elements.",
-                id,
-                arr,
-                cnt);
-        return UINT32_MAX;
-}
-
-void renderer_texture_unload(struct renderer *const restrict ren,
-                             const uint32_t id)
-{
-        const uint32_t ind = renderer_texture_get_index(ren, id);
-
-        assertf(ind != UINT32_MAX,
-                "Failed to unload texture id %lu from renderer's "
-                "array of %lu; couldn't find it in list.",
-                id,
-                ren->tex_cnt);
-
-        glDeleteTextures(1, &id);
+        assertf(id, "Trying to free a NULL Texture ID pointer.");
+        assertf(*id, "Texture ID was already freed OR never allocated.");
+        glDeleteTextures(1, id);
+        *id = 0u;
 }
 
 void renderer_clear(const float r,
