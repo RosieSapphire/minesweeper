@@ -16,19 +16,19 @@
 #define TILES_Y   16u
 #define TILE_SIZE 48u
 
-#define TILE_FLAGS_NONE       (0u)
-#define TILE_FLAG_HAS_BOMB    (1u << TILE_FLAG_HAS_BOMB_SHIFT)
-#define TILE_FLAG_IS_FLAGGED  (1u << TILE_FLAG_IS_FLAGGED_SHIFT)
-#define TILE_FLAG_IS_REVEALED (1u << TILE_FLAG_IS_REVEALED_SHIFT)
+#define TILES_NONE       (0u)
+#define TILE_HAS_BOMB    (1u << TILE_HAS_BOMB_SHIFT)
+#define TILE_IS_FLAGGED  (1u << TILE_IS_FLAGGED_SHIFT)
+#define TILE_IS_REVEALED (1u << TILE_IS_REVEALED_SHIFT)
 
 /*********
  * ENUMS *
  *********/
 
 enum {
-        TILE_FLAG_HAS_BOMB_SHIFT = 0,
-        TILE_FLAG_IS_FLAGGED_SHIFT,
-        TILE_FLAG_IS_REVEALED_SHIFT,
+        TILE_HAS_BOMB_SHIFT = 0,
+        TILE_IS_FLAGGED_SHIFT,
+        TILE_IS_REVEALED_SHIFT,
 };
 
 /******************************

@@ -132,9 +132,9 @@ static void tiles_reset_board(void)
                         for (uint8_t i = 0u; i < 3u; ++i)
                                 cur->col[i] = (float)((uint8_t)rand()) * r255;
 
-                        cur->flags = TILE_FLAGS_NONE;
+                        cur->flags = TILES_NONE;
                         if (!(rand() & 0x7))
-                                cur->flags |= TILE_FLAG_HAS_BOMB;
+                                cur->flags |= TILE_HAS_BOMB;
                 }
         }
 }
@@ -163,8 +163,8 @@ static uint32_t tile_get_surrounding_bombs_count(const uint16_t tx,
 
         for (int y = y_start; y < y_end; y++)
                 for (int x = x_start; x < x_end; x++)
-                        num += (tiles[x][y].flags & TILE_FLAG_HAS_BOMB) >>
-                               TILE_FLAG_HAS_BOMB_SHIFT;
+                        num += (tiles[x][y].flags & TILE_HAS_BOMB) >>
+                               TILE_HAS_BOMB_SHIFT;
 
         return num;
 }
@@ -182,19 +182,45 @@ static void mouse_pos_get_as_tile(const struct window *const restrict wnd,
         o[1] /= TILE_SIZE;
 }
 
+static inline uint32_t tiles_get_revealed_count(void)
+{
+        uint32_t cnt = 0u;
+
+        for (uint16_t y = 0; y < TILES_Y; y++)
+                for (uint16_t x = 0; x < TILES_X; x++)
+                        if (tiles[x][y].flags & TILE_IS_REVEALED)
+                                ++cnt;
+
+        return cnt;
+}
+
 static void tile_reveal(const uint16_t tx, const uint16_t ty)
 {
         struct tile *const t = &tiles[tx][ty];
+        uint32_t           reveal_before;
         uint16_t           x_start, y_start, x_end, y_end;
 
-        if ((t->flags & TILE_FLAG_IS_REVEALED) ||
-            (t->flags & TILE_FLAG_IS_FLAGGED))
+        if ((t->flags & TILE_IS_REVEALED) || (t->flags & TILE_IS_FLAGGED))
                 return;
 
-        t->flags |= TILE_FLAG_IS_REVEALED;
+        reveal_before = tiles_get_revealed_count();
+        t->flags |= TILE_IS_REVEALED;
 
-        if (t->flags & TILE_FLAG_HAS_BOMB) {
-                game_state = GS_LOST;
+        if (t->flags & TILE_HAS_BOMB) {
+                uint32_t nrwnb = 0u;
+
+                if (__builtin_expect(reveal_before, true)) {
+                        game_state = GS_LOST;
+                        return;
+                }
+
+                /* Special case for if our first pick happens to be a bomb. */
+                do {
+                        tiles_reset_board();
+                        ++nrwnb;
+                } while (t->flags & TILE_HAS_BOMB);
+
+                t->flags |= TILE_IS_REVEALED;
                 return;
         }
 
@@ -220,9 +246,9 @@ static bool game_check_won(void)
                 for (uint16_t x = 0; x < TILES_X; x++) {
                         const uint32_t f = tiles[x][y].flags;
 
-                        bomb_cnt += (f & TILE_FLAG_HAS_BOMB) >>
-                                    TILE_FLAG_HAS_BOMB_SHIFT;
-                        hidden_cnt += !(f & TILE_FLAG_IS_REVEALED);
+                        bomb_cnt +=
+                                (f & TILE_HAS_BOMB) >> TILE_HAS_BOMB_SHIFT;
+                        hidden_cnt += !(f & TILE_IS_REVEALED);
                 }
         }
 
@@ -233,8 +259,8 @@ static inline void tiles_remaining_flag(void)
 {
         for (uint16_t y = 0; y < TILES_Y; y++)
                 for (uint16_t x = 0; x < TILES_X; x++)
-                        if (!(tiles[x][y].flags & TILE_FLAG_IS_REVEALED))
-                                tiles[x][y].flags |= TILE_FLAG_IS_FLAGGED;
+                        if (!(tiles[x][y].flags & TILE_IS_REVEALED))
+                                tiles[x][y].flags |= TILE_IS_FLAGGED;
 }
 
 void tiles_update(const struct window *const wnd, const struct input inp)
@@ -282,7 +308,7 @@ void tiles_update(const struct window *const wnd, const struct input inp)
         }
 
         if (inp.flags & INPUT_RMB_PRESS) {
-                tiles[mouse[0]][mouse[1]].flags ^= TILE_FLAG_IS_FLAGGED;
+                tiles[mouse[0]][mouse[1]].flags ^= TILE_IS_FLAGGED;
                 return;
         }
 
@@ -338,16 +364,15 @@ static void tile_draw(const uint32_t shd,
 
         glBindTexture(GL_TEXTURE_2D, tile_tex);
 
-        if (t->flags & TILE_FLAG_IS_FLAGGED)
+        if (t->flags & TILE_IS_FLAGGED)
                 glBindTexture(GL_TEXTURE_2D, tile_flagged_tex);
 
-        if (t->flags & TILE_FLAG_IS_REVEALED)
+        if (t->flags & TILE_IS_REVEALED)
                 glBindTexture(GL_TEXTURE_2D, tile_empty_tex[surround_cnt]);
 
-        if (t->flags & TILE_FLAG_HAS_BOMB) {
-                if (t->flags & TILE_FLAG_IS_REVEALED ||
-                    (game_state == GS_LOST &&
-                     !(t->flags & TILE_FLAG_IS_REVEALED)))
+        if (t->flags & TILE_HAS_BOMB) {
+                if (t->flags & TILE_IS_REVEALED ||
+                    (game_state == GS_LOST && !(t->flags & TILE_IS_REVEALED)))
                         glBindTexture(GL_TEXTURE_2D, tile_bomb_tex);
         }
 
