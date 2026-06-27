@@ -47,7 +47,7 @@ struct tile {
 
 static enum game_state game_state = GS_PLAYING;
 
-static struct tile tiles[TILES_X][TILES_Y];
+static struct tile tiles[TILES_X * TILES_Y];
 
 static void tiles_textures_load(void)
 {
@@ -122,20 +122,17 @@ static void tiles_quad_gen(struct quad *const restrict quad,
 static void tiles_reset_board(void)
 {
         game_state = GS_PLAYING;
-        for (uint16_t y = 0; y < TILES_Y; y++) {
-                for (uint16_t x = 0; x < TILES_X; x++) {
-                        static const float r255 = 1.0f / 255.0f;
-                        /* FIXME: Make this a linear array! */
-                        struct tile *const cur  = &tiles[x][y];
+        for (uint16_t i = 0u; i < TILES_X * TILES_Y; i++) {
+                static const float r255 = 1.0f / 255.0f;
+                struct tile *const cur  = &tiles[i];
 
-                        /* FIXME: What the fuck does this even do?! */
-                        for (uint8_t i = 0u; i < 3u; ++i)
-                                cur->col[i] = (float)((uint8_t)rand()) * r255;
+                /* FIXME: What the fuck does this even do?! */
+                for (uint8_t j = 0u; j < 3u; ++j)
+                        cur->col[j] = (float)((uint8_t)rand()) * r255;
 
-                        cur->flags = TILES_NONE;
-                        if (!(rand() & 0x7))
-                                cur->flags |= TILE_HAS_BOMB;
-                }
+                cur->flags = TILES_NONE;
+                if (!(rand() & 0x7))
+                        cur->flags |= TILE_HAS_BOMB;
         }
 }
 
@@ -161,9 +158,10 @@ static uint32_t tile_get_surrounding_bombs_count(const uint16_t tx,
 
         uint32_t num = 0u;
 
-        for (int y = y_start; y < y_end; y++)
-                for (int x = x_start; x < x_end; x++)
-                        num += (tiles[x][y].flags & TILE_HAS_BOMB) >>
+        for (uint16_t y = y_start; y < y_end; y++)
+                for (uint16_t x = x_start; x < x_end; x++)
+                        num += (tiles[y * TILES_X + x].flags &
+                                TILE_HAS_BOMB) >>
                                TILE_HAS_BOMB_SHIFT;
 
         return num;
@@ -186,17 +184,16 @@ static inline uint32_t tiles_get_revealed_count(void)
 {
         uint32_t cnt = 0u;
 
-        for (uint16_t y = 0; y < TILES_Y; y++)
-                for (uint16_t x = 0; x < TILES_X; x++)
-                        if (tiles[x][y].flags & TILE_IS_REVEALED)
-                                ++cnt;
+        for (uint16_t i = 0u; i < TILES_X * TILES_Y; i++)
+                if (tiles[i].flags & TILE_IS_REVEALED)
+                        ++cnt;
 
         return cnt;
 }
 
 static void tile_reveal(const uint16_t tx, const uint16_t ty)
 {
-        struct tile *const t = &tiles[tx][ty];
+        struct tile *const t = &tiles[ty * TILES_X + tx];
         uint32_t           reveal_before;
         uint16_t           x_start, y_start, x_end, y_end;
 
@@ -207,8 +204,6 @@ static void tile_reveal(const uint16_t tx, const uint16_t ty)
         t->flags |= TILE_IS_REVEALED;
 
         if (t->flags & TILE_HAS_BOMB) {
-                uint32_t nrwnb = 0u;
-
                 if (__builtin_expect(reveal_before, true)) {
                         game_state = GS_LOST;
                         return;
@@ -217,7 +212,6 @@ static void tile_reveal(const uint16_t tx, const uint16_t ty)
                 /* Special case for if our first pick happens to be a bomb. */
                 do {
                         tiles_reset_board();
-                        ++nrwnb;
                 } while (t->flags & TILE_HAS_BOMB);
 
                 t->flags |= TILE_IS_REVEALED;
@@ -242,14 +236,11 @@ static bool game_check_won(void)
         uint32_t bomb_cnt   = 0u;
         uint32_t hidden_cnt = 0u;
 
-        for (uint16_t y = 0; y < TILES_Y; y++) {
-                for (uint16_t x = 0; x < TILES_X; x++) {
-                        const uint32_t f = tiles[x][y].flags;
+        for (uint16_t i = 0u; i < TILES_X * TILES_Y; i++) {
+                const uint32_t f = tiles[i].flags;
 
-                        bomb_cnt +=
-                                (f & TILE_HAS_BOMB) >> TILE_HAS_BOMB_SHIFT;
-                        hidden_cnt += !(f & TILE_IS_REVEALED);
-                }
+                bomb_cnt += (f & TILE_HAS_BOMB) >> TILE_HAS_BOMB_SHIFT;
+                hidden_cnt += !(f & TILE_IS_REVEALED);
         }
 
         return (bomb_cnt == hidden_cnt);
@@ -257,10 +248,9 @@ static bool game_check_won(void)
 
 static inline void tiles_remaining_flag(void)
 {
-        for (uint16_t y = 0; y < TILES_Y; y++)
-                for (uint16_t x = 0; x < TILES_X; x++)
-                        if (!(tiles[x][y].flags & TILE_IS_REVEALED))
-                                tiles[x][y].flags |= TILE_IS_FLAGGED;
+        for (uint16_t i = 0u; i < TILES_X * TILES_Y; i++)
+                if (!(tiles[i].flags & TILE_IS_REVEALED))
+                        tiles[i].flags |= TILE_IS_FLAGGED;
 }
 
 void tiles_update(const struct window *const wnd, const struct input inp)
@@ -298,7 +288,10 @@ void tiles_update(const struct window *const wnd, const struct input inp)
         mouse_pos_get_as_tile(wnd, mouse);
 
         if (inp.flags & INPUT_LMB_PRESS) {
-                tile_reveal((uint16_t)mouse[0], (uint16_t)mouse[1]);
+                const uint16_t x = (uint16_t)mouse[0];
+                const uint16_t y = (uint16_t)mouse[1];
+
+                tile_reveal(x, y);
                 if (game_check_won()) {
                         tiles_remaining_flag();
                         game_state = GS_WON;
@@ -308,7 +301,10 @@ void tiles_update(const struct window *const wnd, const struct input inp)
         }
 
         if (inp.flags & INPUT_RMB_PRESS) {
-                tiles[mouse[0]][mouse[1]].flags ^= TILE_IS_FLAGGED;
+                const uint32_t i =
+                        (uint32_t)mouse[1] * TILES_X + (uint32_t)mouse[0];
+
+                tiles[i].flags ^= TILE_IS_FLAGGED;
                 return;
         }
 
@@ -327,7 +323,7 @@ static void tile_draw(const uint32_t shd,
                 tile_get_surrounding_bombs_count(tx, ty);
         const uint16_t           tile_x = tx * TILE_SIZE;
         const uint16_t           tile_y = ty * TILE_SIZE;
-        const struct tile *const t      = &tiles[tx][ty];
+        const struct tile *const t      = &tiles[ty * TILES_X + tx];
 
         const float rect[4] = {
                 (float)tile_x / (float)wnd_wid,
@@ -387,9 +383,8 @@ void tiles_draw(const uint32_t shd,
                 const uint32_t wnd_wid,
                 const uint32_t wnd_hei)
 {
-        for (uint16_t y = 0; y < TILES_Y; y++)
-                for (uint16_t x = 0; x < TILES_X; x++)
-                        tile_draw(shd, wnd_wid, wnd_hei, x, y);
+        for (uint16_t i = 0u; i < TILES_X * TILES_Y; i++)
+                tile_draw(shd, wnd_wid, wnd_hei, x, y);
 }
 
 static void tiles_terminate_quad(struct quad *const q)
