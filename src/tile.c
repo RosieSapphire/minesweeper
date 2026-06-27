@@ -133,7 +133,7 @@ static void tiles_reset_board(void)
                                 cur->col[i] = (float)((uint8_t)rand()) * r255;
 
                         cur->flags = TILE_FLAGS_NONE;
-                        if (!(rand() & 63u))
+                        if (!(rand() & 7u))
                                 cur->flags |= TILE_FLAG_HAS_BOMB;
                 }
         }
