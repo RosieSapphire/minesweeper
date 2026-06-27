@@ -35,7 +35,6 @@ int main(void)
                 input = input_poll(input, &window);
                 tiles_update(&window, input);
 
-                renderer_clear(0.2f, 0.3f, 0.2f, 1.0f, false);
                 tiles_draw(shader, window.width, window.height);
                 renderer_display_to_window(&window, &renderer);
         }
