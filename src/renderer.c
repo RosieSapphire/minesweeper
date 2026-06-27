@@ -46,8 +46,10 @@ void renderer_terminate(struct renderer *const ren)
                 "Render was never initialized.");
 
         ren->flags &= ~REND_FLAG_IS_INIT;
-        for (uint8_t i = 0u; i < 4u; ++i)
-                ren->clear_col[i] = 0.0f;
+        ren->clear_col.r = 0.0f;
+        ren->clear_col.g = 0.0f;
+        ren->clear_col.b = 0.0f;
+        ren->clear_col.a = 0.0f;
 }
 
 static uint32_t shader_part_compile(const char *const path,
@@ -175,13 +177,24 @@ void texture_unload(uint32_t *const id)
         *id = 0u;
 }
 
-void renderer_clear(const float r,
-                    const float g,
-                    const float b,
-                    const float a,
-                    const bool  depth)
+void renderer_clear_color_set(struct renderer *const rnd,
+                              const float            r,
+                              const float            g,
+                              const float            b,
+                              const float            a)
 {
-        glClearColor(r, g, b, a);
+        rnd->clear_col.r = r;
+        rnd->clear_col.g = g;
+        rnd->clear_col.b = b;
+        rnd->clear_col.a = a;
+}
+
+void renderer_clear(const struct renderer *const rnd, const bool depth)
+{
+        glClearColor(rnd->clear_col.r,
+                     rnd->clear_col.g,
+                     rnd->clear_col.b,
+                     rnd->clear_col.a);
         glClear(GL_COLOR_BUFFER_BIT | (depth * GL_DEPTH_BUFFER_BIT));
 }
 

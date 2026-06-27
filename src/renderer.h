@@ -27,7 +27,13 @@ enum {
  **************/
 
 struct renderer {
-        float    clear_col[4];
+        struct {
+                float r;
+                float g;
+                float b;
+                float a;
+        } clear_col;
+
         uint32_t flags;
 };
 
@@ -42,11 +48,13 @@ extern void     shader_unload(uint32_t *const id);
 extern uint32_t texture_load(const char *const path);
 extern void     texture_unload(uint32_t *const id);
 
-extern void renderer_clear(const float r,
-                           const float g,
-                           const float b,
-                           const float a,
-                           const bool  depth);
+extern void renderer_clear_color_set(struct renderer *const rnd,
+                                     const float            r,
+                                     const float            g,
+                                     const float            b,
+                                     const float            a);
+extern void renderer_clear(const struct renderer *const rnd,
+                           const bool                   depth);
 extern void renderer_display_to_window(
         const struct window *const restrict wnd,
         const struct renderer *const restrict rnd);
