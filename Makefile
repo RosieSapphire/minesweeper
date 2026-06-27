@@ -56,7 +56,7 @@ SRC_DIRS := src
 C_FILES  := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
 O_FILES  := $(C_FILES:%.c=$(BUILD_DIR)/%.o)
 
-.PHONY: clean
+.PHONY: all clean todo
 
 all: $(PROG_BIN)
 
@@ -76,3 +76,6 @@ $(BUILD_DIR)/%.o: %.c
 clean:
 	@echo Clearing previous build.
 	$(V)rm -rf $(PROG_BIN) $(O_FILES)
+
+todo:
+	@grep -rniE "todo|fixme|removeme|#if 0|#if 1"
