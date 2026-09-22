@@ -12,8 +12,8 @@
  * DEFINES *
  ***********/
 
-#define TILES_X   16u
-#define TILES_Y   16u
+#define TILES_X   12u
+#define TILES_Y   12u
 #define TILE_SIZE 48u
 
 #define TILES_NONE       (0u)
