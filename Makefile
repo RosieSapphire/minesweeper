@@ -5,7 +5,7 @@ else
 endif
 
 BUILD_DIR := build
-PROG_BIN  := $(BUILD_DIR)/minesweeper
+PROG_BIN  := minesweeper
 
 WARN_INC   := all \
 	      extra \
