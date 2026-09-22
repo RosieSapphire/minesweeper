@@ -15,7 +15,7 @@ WARN_EXC   := reserved-identifier \
 	      unsafe-buffer-usage
 STD_FLAGS  := -std=c99 -pedantic
 
-CC := clang-20
+CC ?= clang
 
 VENDOR_DIR := vendor
 GLFW_DIR := vendor/GLFW
