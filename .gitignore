@@ -4,4 +4,4 @@ build/
 
 # files
 compile_commands.json
-puzzle
+minesweeper
