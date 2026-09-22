@@ -41,7 +41,7 @@ size_t ftell_check(FILE *const fp)
         assertf(t > 0l, "File <%p> has size of 0.\n", fp);
         return (size_t)t;
 #else  /* #ifdef DEBUG */
-        return ftell(fp);
+        return (size_t)ftell(fp);
 #endif /* #ifdef DEBUG #else */
 }
 
